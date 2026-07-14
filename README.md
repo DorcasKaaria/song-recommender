@@ -1,4 +1,3 @@
-```markdown
 # Project: Music Recommendation System 2.0
 
 ## Objective
@@ -63,4 +62,3 @@ A deployed web application that integrates:
 - REST APIs with FastAPI
 - Interactive frontend
 - Cloud deployment on Render
-```
