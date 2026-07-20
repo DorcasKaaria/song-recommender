@@ -12,7 +12,7 @@
  */
 
 // Falls back to a default if env.js wasn't copied from env.example.js yet.
-const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "http://127.0.0.1:8000";
+const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "https://soundwave-api-0mgh.onrender.com";
 
 const ENDPOINTS = {
   songs: () => `${API_BASE}/songs`,

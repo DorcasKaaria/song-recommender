@@ -1,20 +1,12 @@
 from io import StringIO
-from os import getenv
-
 import pandas as pd
 import psycopg
-from dotenv import load_dotenv
-from pathlib import Path
 
-load_dotenv()
+import os
 
-DATABASE_URL = getenv("DATABASE_URL")
+DATABASE_URL = os.environ["DATABASE_URL"]
+CSV_PATH = os.environ["DATASET_PATH"]
 
-def get_default_dataset_path():
-    root_dir = Path(__file__).resolve().parent
-    return f"{root_dir}/dataset.csv"
-
-CSV_PATH = getenv("DATASET_PATH", get_default_dataset_path())
 
 print("Reading CSV...")
 
