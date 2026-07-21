@@ -161,3 +161,18 @@ def update_song(track_id: str, updates: SongUpdate):
         "track_id": track_id,
         "updated_fields": list(update_data.keys()),
     }
+
+
+@app.post("/songs")
+def add_songs():
+    query ="""Insert into songs(
+        track_id, 
+        track_name, 
+        artist_name,
+        genre) 
+    values %s"""
+    song_inserted = execute(query, ("1", "cherono", "abishai", "afropop"))
+    print(song_inserted)
+
+
+
