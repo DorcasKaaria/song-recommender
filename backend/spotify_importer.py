@@ -14,7 +14,7 @@ CLIENT_SECRET = os.environ["SPOTIFY_CLIENT_SECRET"]
 # Example 1 - The Voyage of 67 64wkinQzeyoBls7ES3RD6Z
 # Example 2 - Velocity 6Db1zZcoO7JPczkjjU4vuX
 
-PLAYLIST_ID = "6i48HFUuW5SYSskpGlR9Tr"
+PLAYLIST_ID = "6f38BFklpsOzNpfux87O5y"
 
 # All outputs for this playlist will be written here
 OUTPUT_DIR = Path("debug") / PLAYLIST_ID
