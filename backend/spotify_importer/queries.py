@@ -348,6 +348,7 @@ VALUES (
 GET_PLAYLIST_SONGS = """
 SELECT
     pt.position,
+    ai.url AS track_image,
     t.id AS track_id,
     t.name AS track_name,
     t.duration_ms,
@@ -360,6 +361,9 @@ JOIN tracks t
     ON pt.track_id = t.id
 LEFT JOIN albums a
     ON t.album_id = a.id
+LEFT JOIN album_images ai
+    ON a.id = ai.album_id
+   AND ai.image_order = 0
 LEFT JOIN track_artists ta
     ON ta.track_id = t.id
 LEFT JOIN artists ar
@@ -367,6 +371,7 @@ LEFT JOIN artists ar
 WHERE pt.playlist_id = %s
 GROUP BY
     pt.position,
+    ai.url,
     t.id,
     t.name,
     t.duration_ms,

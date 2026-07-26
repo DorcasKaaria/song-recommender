@@ -12,15 +12,24 @@
  */
 
 // Falls back to a default if env.js wasn't copied from env.example.js yet.
-const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "https://soundwave-api-0mgh.onrender.com";
+const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "http://127.0.0.1:8000";
 
 const ENDPOINTS = {
-  songs: () => `${API_BASE}/songs`,
+  // Home
+  playlists: () => `${API_BASE}/playlists`,
+
+  // Home -> clicking a playlist tile
+  playlistSongs: (playlistId) => `${API_BASE}/playlists/${playlistId}/songs`,
+
+  // Search page
   search: (q) => `${API_BASE}/songs/search?q=${encodeURIComponent(q)}`,
-  recommend: (id) => `${API_BASE}/recommend/${id}`,
-  predictFeatures: (id) => `${API_BASE}/predict-features/${id}`,
-  addSong: () => `${API_BASE}/songs`,
-  // NOTE: singular "song" (not "songs") — this is intentional, matching
-  // the backend's actual update route. Don't "fix" this into /songs/{id}.
-  updateSong: (id) => `${API_BASE}/song/${id}`,
+
+  // Queue sources (see player.js)
+  songs: () => `${API_BASE}/songs`, // Shuffle Random
+
+  // Shuffle Recommended — the two are mutually exclusive: exactly one of
+  // track_id / playlist_id is sent, depending on what the user picked in
+  // the "Play Recommended" dialog. Never call both for the same request.
+  recommendByTrack: (trackId) => `${API_BASE}/recommend?track_id=${encodeURIComponent(trackId)}`,
+  recommendByPlaylist: (playlistId) => `${API_BASE}/recommend?playlist_id=${encodeURIComponent(playlistId)}`,
 };

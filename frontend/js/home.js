@@ -1,122 +1,73 @@
 /**
  * home.js
  * -----------------------------------------------------------------------------
- * Home page: GET /songs
- * Shows the top stats strip (total songs / genres / avg popularity) and the
- * full song table. Clicking a row (or its "recommend" icon) opens the song
- * detail popup for that song — see songModal.js.
+ * Home page: GET /playlists
+ * Shows a grid of playlist tiles (thumbnail + title), Spotify-home-style,
+ * plus a time-of-day greeting. Clicking a tile does NOT start playing it —
+ * it opens the Playlist page (see playlistPage.js) so you can see the full
+ * track list first; playback only starts once you press Play or pick a
+ * specific song there.
  *
- * FIELD NAMES: songRowHTML() and renderStatStrip() read song.track_id /
- * song.track_name / song.artists / song.album_name / song.track_genre /
- * song.duration_ms / song.popularity — these are the exact field names the
- * real backend returns for a song (this matches the well-known "Spotify
- * Tracks Dataset" schema). search.js and songModal.js are kept consistent
- * with these same names.
+ * FIELD NAMES: each playlist object is { id, name, description, followers,
+ * public, collaborative, thumbnail_url, track_count }. id/name/
+ * thumbnail_url are used on this page; the rest (plus description) are
+ * used on the Playlist page.
  *
- * ALL_SONGS holds the most recent list returned by the backend. Other files
- * (songModal.js) read it too, instead of each fetching its own copy.
+ * ALL_PLAYLISTS holds the most recent list returned by the backend. It's
+ * also read by player.js's "Play Recommended" dialog (to list playlists
+ * you can base recommendations on) and by playlistPage.js (to look up a
+ * playlist's own metadata by id) without a second fetch.
  * -----------------------------------------------------------------------------
  */
 
-let ALL_SONGS = [];
+let ALL_PLAYLISTS = [];
 
-function renderStatStrip() {
-  const strip = document.getElementById('statStrip');
-  const avgPop = Math.round(ALL_SONGS.reduce((a, s) => a + s.popularity, 0) / ALL_SONGS.length);
-  const genreCount = new Set(ALL_SONGS.map(s => s.track_genre)).size;
-  strip.innerHTML = `
-    <div class="stat-pill"><div class="num">${ALL_SONGS.length}</div><div class="lbl">Total Songs</div></div>
-    <div class="stat-pill"><div class="num">${genreCount}</div><div class="lbl">Genres</div></div>
-    <div class="stat-pill"><div class="num">${avgPop}</div><div class="lbl">Avg. Popularity</div></div>
-  `;
+function setGreeting() {
+  document.getElementById('homeGreeting').textContent = getGreeting();
 }
 
-function songRowHTML(song, showActions = true) {
+function playlistTileHTML(playlist) {
+  const thumb = playlist.thumbnail_url
+    ? `<img src="${escapeHTML(playlist.thumbnail_url)}" alt="" loading="lazy">`
+    : `<div class="playlist-tile-fallback">🎵</div>`;
+
   return `
-    <tr class="song-row" data-id="${song.track_id}">
-      <td>
-        <div class="song-cell">
-          <div class="song-meta">
-            <strong>${escapeHTML(song.track_name)}</strong>
-            <span>${escapeHTML(song.artists)}</span>
-          </div>
-        </div>
-      </td>
-      <td>${escapeHTML(song.album_name)}</td>
-      <td><span class="badge">${song.track_genre}</span></td>
-      <td>${fmtDuration(song.duration_ms)}</td>      <td>
-        <div class="row-actions">
-          <button class="icon-btn recommend-icon" data-id="${song.track_id}" title="Get recommendations">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          </button>
-        </div>
-      </td>
-    </tr>
+    <button class="playlist-tile" data-id="${playlist.id}">
+      <div class="playlist-tile-art">${thumb}</div>
+      <span class="playlist-tile-title">${escapeHTML(playlist.name)}</span>
+    </button>
   `;
 }
 
-async function loadHomeSongs() {
-  const container = document.getElementById('homeSongsContainer');
-  container.innerHTML = `<div class="loading"><div class="spinner"></div> Loading songs…</div>`;
+async function loadPlaylists() {
+  const container = document.getElementById('playlistsContainer');
+  container.innerHTML = `<div class="loading"><div class="spinner"></div> Loading playlists…</div>`;
 
-  const { data: songs, error } = await apiCall(ENDPOINTS.songs());
+  const { data: playlists, error } = await apiCall(ENDPOINTS.playlists());
 
   if (error) {
     container.innerHTML = errorStateHTML(error);
-    document.getElementById('statStrip').innerHTML = '';
     return;
   }
 
-  ALL_SONGS = songs;
-  renderStatStrip();
+  ALL_PLAYLISTS = playlists;
 
-  if (songs.length === 0) {
-    container.innerHTML = `<div class="empty-state"><p>No songs found in the database.</p></div>`;
+  if (!playlists || playlists.length === 0) {
+    container.innerHTML = `<div class="empty-state"><p>No playlists found.</p></div>`;
     return;
   }
 
   container.innerHTML = `
-    <table class="song-table">
-      <thead>
-        <tr>
-          <th>Title</th><th>Album</th><th>Genre</th><th>Duration</th><th></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${songs.map(s => songRowHTML(s)).join('')}
-      </tbody>
-    </table>
+    <div class="playlist-grid">
+      ${playlists.map(p => playlistTileHTML(p)).join('')}
+    </div>
   `;
 
-  attachRowHandlers(container);
-}
-
-/**
- * Manual "Refresh" button on the Home page — simply re-runs loadHomeSongs(),
- * which hits GET /songs again and re-renders the table with whatever the
- * backend currently has (e.g. after adding a song from another tab/device).
- */
-document.getElementById('refreshSongsBtn').addEventListener('click', async () => {
-  const btn = document.getElementById('refreshSongsBtn');
-  btn.disabled = true;
-  btn.textContent = 'Refreshing…';
-  await loadHomeSongs();
-  btn.disabled = false;
-  btn.textContent = 'Refresh';
-});
-
-function attachRowHandlers(container) {
-  // The small icon jumps straight to the Recommendations tab of the popup;
-  // clicking anywhere else on the row opens the popup on its default tab.
-  container.querySelectorAll('.recommend-icon').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openSongModal(btn.dataset.id, 'recommend');
-    });
-  });
-  container.querySelectorAll('.song-row').forEach(row => {
-    row.addEventListener('click', () => {
-      openSongModal(row.dataset.id);
+  container.querySelectorAll('.playlist-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      openPlaylistPage(tile.dataset.id);
     });
   });
 }
+
+setGreeting();

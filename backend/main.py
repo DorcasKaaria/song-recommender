@@ -21,6 +21,11 @@ SONG_PATH = BASE_DIR / "songs.pkl"
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
+model = joblib.load(MODEL_PATH)
+
+songs_table= joblib.load(SONG_PATH)
+
+
 
 app = FastAPI()
 
@@ -94,7 +99,7 @@ def all_songs():
 
 
 @app.get("/songs/search")
-def search_songs(q: str):
+def search_songs(q: str=None, artist_name: str=None):
     search = f"%{q}%"
 
     return fetch_all(
@@ -109,13 +114,25 @@ def search_songs(q: str):
     )
 
 
-@app.get("/recommend/{track_id}")
-def recommend(track_id: str):
-    model = joblib.load(MODEL_PATH)
-    song_features = pd.DataFrame(get_song_by_id(track_id))
-    feature_keys=['popularity','duration_ms','danceability','energy','key','loudness','mode','speechiness','acousticness','instrumentalness','liveness','valence','tempo','time_signature']
+@app.get("/recommend")
+def recommend(track_id: str = None, playlist_id: str = None):
+
+    if track_id:
+        # Get songs by track id
+        song_features = pd.DataFrame(get_song_by_id(track_id))
+    elif playlist_id:
+        # Get songs by playlist
+        song_features = pd.DataFrame(get_playlist_songs(playlist_id))
+    else:
+        return {"message": "Pass either playlist id or track id"}
+
+    feature_keys=[
+        'popularity','duration_ms','danceability',
+        'energy','key','loudness','mode',
+        'speechiness','acousticness','instrumentalness',
+        'liveness','valence','tempo','time_signature'
+    ]
     distances, indices = model.kneighbors(song_features[feature_keys])
-    songs_table= joblib.load(SONG_PATH)
     recommended_songs = songs_table.iloc[indices[0]]
     print(recommended_songs)
     return recommended_songs.to_dict(orient="records")

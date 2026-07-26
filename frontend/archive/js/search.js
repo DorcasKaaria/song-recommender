@@ -4,27 +4,8 @@
  * Search page: GET /songs/search?q=<query>
  * Listens on both the top bar search box and the dedicated Search page box.
  * Debounces input so it doesn't search on every single keystroke.
- *
- * Clicking a result queues it right after the current song and plays it
- * immediately (see enqueueNextAndPlay() in player.js).
  * -----------------------------------------------------------------------------
  */
-
-function searchResultRowHTML(song) {
-  const thumb = song.track_image
-    ? `<img src="${escapeHTML(song.track_image)}" alt="" loading="lazy">`
-    : `<div class="search-row-fallback">🎵</div>`;
-
-  return `
-    <li class="search-row" data-id="${song.track_id}">
-      <div class="search-row-art">${thumb}</div>
-      <div class="search-row-info">
-        <strong>${escapeHTML(song.track_name)}</strong>
-        <span>${escapeHTML(song.artists)}</span>
-      </div>
-    </li>
-  `;
-}
 
 let searchDebounce;
 function handleSearchInput(query) {
@@ -51,14 +32,13 @@ function handleSearchInput(query) {
       resultsDiv.innerHTML = `<div class="empty-state"><p>No results for "${escapeHTML(query)}"</p></div>`;
       return;
     }
-    resultsDiv.innerHTML = `<ul class="search-results-list">${results.map(s => searchResultRowHTML(s)).join('')}</ul>`;
-
-    resultsDiv.querySelectorAll('.search-row').forEach((row, i) => {
-      row.addEventListener('click', () => {
-        enqueueNextAndPlay(results[i]);
-        goToPage('player');
-      });
-    });
+    resultsDiv.innerHTML = `
+      <table class="song-table">
+        <thead><tr><th>Title</th><th>Album</th><th>Genre</th><th>Duration</th><th></th></tr></thead>
+        <tbody>${results.map(s => songRowHTML(s)).join('')}</tbody>
+      </table>
+    `;
+    attachRowHandlers(resultsDiv);
   }, 350);
 }
 

@@ -276,11 +276,16 @@ class SpotifyImporter:
 
             added_by = item.get("added_by")
 
-            if added_by and added_by.get("id"):
+            added_by_id = None
 
-                user_rows[added_by["id"]] = {
+            if added_by:
+                added_by_id = added_by.get("id") or None
 
-                    "id": added_by["id"],
+            if added_by_id:
+
+                user_rows[added_by_id] = {
+
+                    "id": added_by_id,
                     "display_name": added_by.get("display_name"),
                     "href": added_by.get("href"),
                     "uri": added_by.get("uri"),
@@ -297,7 +302,7 @@ class SpotifyImporter:
                 "track_id": track["id"],
                 "position": position,
                 "added_at": item.get("added_at"),
-                "added_by": added_by.get("id") if added_by else None,
+                "added_by": added_by_id if added_by else None,
                 "is_local": item.get("is_local"),
 
             })

@@ -395,12 +395,28 @@ svg {
 }
 
 /* ---------- Forms ---------- */
-/* (.form-group is still used by the "Play Recommended" dialog's search box) */
+
+.panel {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 720px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+}
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.form-group.full {
+  grid-column: 1 / -1;
 }
 
 .form-group label {
@@ -426,115 +442,98 @@ svg {
   border-color: var(--accent);
 }
 
-/* ---------- Playlist grid (Home) ---------- */
-
-.playlist-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
-}
-
-.playlist-tile {
-  background: var(--bg-card);
-  border: none;
-  border-radius: var(--radius);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  cursor: pointer;
-  text-align: left;
-  transition: background .15s ease;
-}
-
-.playlist-tile:hover {
-  background: var(--bg-card-hover);
-}
-
-.playlist-tile-art {
-  aspect-ratio: 1;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--bg-highlight);
+.checkbox-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.playlist-tile-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.playlist-tile-fallback {
-  font-size: 32px;
-}
-
-.playlist-tile-title {
+  gap: 8px;
+  cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* ---------- Search results list ---------- */
-
-.search-results-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }
 
-.search-row {
+.slider-row {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.slider-value {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-subdued);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ---------- Song table ---------- */
+
+.song-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.song-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-subdued);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.song-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.song-row {
   cursor: pointer;
 }
 
-.search-row:hover {
+.song-row:hover {
   background: var(--bg-highlight);
 }
 
-.search-row-art {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--bg-card);
+.song-cell {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
 }
 
-.search-row-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.search-row-fallback {
-  font-size: 18px;
-}
-
-.search-row-info {
+.song-meta {
   display: flex;
   flex-direction: column;
-  min-width: 0;
 }
 
-.search-row-info span {
+.song-meta span {
   color: var(--text-subdued);
   font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  background: var(--bg-highlight);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--text-subdued);
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .icon-btn {
@@ -554,175 +553,6 @@ svg {
 .icon-btn svg {
   width: 16px;
   height: 16px;
-}
-
-/* ---------- Back button (Playlist page) ---------- */
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  color: var(--text-subdued);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 4px;
-  margin-bottom: 16px;
-}
-
-.back-btn:hover {
-  color: var(--text);
-}
-
-.back-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* ---------- Playlist page header ---------- */
-
-.playlist-header {
-  display: flex;
-  align-items: flex-end;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.playlist-header-art {
-  width: 180px;
-  height: 180px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  object-fit: cover;
-  background: var(--bg-card);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-}
-
-.playlist-header-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.playlist-header-label {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-subdued);
-}
-
-.playlist-header-title {
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1.1;
-  word-break: break-word;
-}
-
-.playlist-header-description {
-  color: var(--text-subdued);
-  font-size: 14px;
-  margin: 0;
-}
-
-.playlist-header-meta {
-  color: var(--text-subdued);
-  font-size: 13px;
-}
-
-.playlist-play-btn {
-  margin-bottom: 20px;
-}
-
-/* ---------- Track list (Playlist page + Queue page) ---------- */
-
-.track-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.track-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.track-row:hover {
-  background: var(--bg-highlight);
-}
-
-.track-row.playing {
-  background: var(--bg-highlight);
-}
-
-.track-row.playing .track-row-info strong,
-.track-row.playing .track-row-number {
-  color: var(--accent);
-}
-
-.track-row-number {
-  width: 20px;
-  flex-shrink: 0;
-  text-align: center;
-  color: var(--text-subdued);
-  font-size: 13px;
-}
-
-.track-row-art {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--bg-card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.track-row-art img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.track-row-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.track-row-info span {
-  color: var(--text-subdued);
-  font-size: 13px;
-}
-
-.track-row-duration {
-  color: var(--text-subdued);
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-/* ---------- Queue page ---------- */
-
-.queue-source-banner {
-  background: var(--bg-card);
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  padding: 12px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 20px;
 }
 
 /* ---------- Toasts ---------- */
@@ -752,7 +582,7 @@ svg {
   color: #fff;
 }
 
-/* ---------- Shared modal/dialog shell (used by the "Play Recommended" dialog) ---------- */
+/* ---------- Song detail popup ---------- */
 
 .modal-overlay {
   display: none;
@@ -815,9 +645,78 @@ svg {
   background: var(--bg-highlight);
 }
 
+.modal-tabs-wrapper {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.modal-tab-arrow {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-subdued);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 8px 6px;
+  border-radius: 6px;
+}
+
+.modal-tab-arrow:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-highlight);
+}
+
+.modal-tab-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.modal-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-subdued);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.modal-tab:hover {
+  color: var(--text);
+}
+
+.modal-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
 .modal-body {
   padding: 20px;
   overflow-y: auto;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .tab-hint {
@@ -831,9 +730,16 @@ svg {
   font-weight: 600;
 }
 
+.embed-frame {
+  width: 100%;
+  height: 280px;
+  border: none;
+  border-radius: 8px;
+}
+
 .rec-list {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -865,202 +771,17 @@ svg {
   font-size: 12px;
 }
 
-/* ---------- Mini player bar ---------- */
-
-.mini-player {
-  display: none;
+.similarity-pill {
   flex-shrink: 0;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: var(--bg-elevated);
-  border-top: 1px solid var(--border);
-  cursor: pointer;
-}
-
-.mini-player.show {
-  display: flex;
-}
-
-.mini-player-art {
-  width: 44px;
-  height: 44px;
-  border-radius: 6px;
-  object-fit: cover;
-  background: var(--bg-card);
-  flex-shrink: 0;
-}
-
-.mini-player-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.mini-player-title {
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mini-player-artist {
-  font-size: 12px;
-  color: var(--text-subdued);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ---------- Player page ---------- */
-
-.player-content {
-  flex-direction: column;
-  align-items: center;
-  max-width: 420px;
-  margin: 0 auto;
-  gap: 20px;
-  padding-bottom: 32px;
-}
-
-.player-cover-art {
-  width: 100%;
-  max-width: 320px;
-  aspect-ratio: 1;
-  border-radius: 12px;
-  object-fit: cover;
-  background: var(--bg-card);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-.player-track-info {
-  text-align: center;
-}
-
-.player-track-title {
-  font-size: 22px;
+  font-size: 11px;
   font-weight: 700;
-}
-
-.player-track-artist {
-  font-size: 14px;
-  color: var(--text-subdued);
-  margin-top: 4px;
-}
-
-.player-controls {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.player-control-btn {
-  background: transparent;
-  border: none;
-  color: var(--text);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
-  display: flex;
-}
-
-.player-control-btn svg {
-  width: 28px;
-  height: 28px;
-}
-
-.player-control-btn:hover:not(:disabled) {
-  background: var(--bg-highlight);
-}
-
-.player-control-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
-.player-control-btn-main {
-  background: var(--accent);
-  width: 56px;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-}
-
-.player-control-btn-main svg {
-  width: 26px;
-  height: 26px;
-}
-
-.player-control-btn-main:hover {
-  background: var(--accent-hover);
-}
-
-/*
-  The Spotify iFrame API player — kept compact on purpose. It's the audio
-  "engine", not the visual focus (see playbackEngine.js). If you swap in a
-  real streamed-audio engine later, this is the element it would mount
-  into instead (or you can remove it and drop the height to 0).
-*/
-.spotify-engine-frame {
-  width: 100%;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.reshuffle-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  width: 100%;
-}
-
-.reshuffle-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text);
+  color: var(--accent);
+  background: rgba(29, 120, 226, 0.1);
   border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  flex: 1 1 auto;
-  justify-content: center;
-  white-space: nowrap;
+  padding: 3px 10px;
 }
 
-.reshuffle-btn svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.reshuffle-btn:hover:not(:disabled) {
-  background: var(--bg-card-hover);
-  border-color: var(--accent);
-}
-
-.reshuffle-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.credits-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.credits-row {
+.feature-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1069,51 +790,21 @@ svg {
   font-size: 13px;
 }
 
-.credits-row:last-child {
+.feature-row:last-of-type {
   border-bottom: none;
 }
 
-.credits-name {
-  font-weight: 600;
-}
-
-.credits-role {
+.feature-label {
   color: var(--text-subdued);
 }
 
-/* ---------- Mobile bottom nav (hidden on desktop, shown below 800px) ---------- */
-
-.mobile-nav {
-  display: none;
-  flex-shrink: 0;
-  justify-content: space-around;
-  align-items: center;
-  background: var(--bg-elevated);
-  border-top: 1px solid var(--border);
-  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
-}
-
-.mobile-nav .nav-item {
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
-  font-size: 10px;
+.feature-value {
   font-weight: 600;
-  background: transparent;
-  border: none;
-  color: var(--text-subdued);
-  cursor: pointer;
 }
 
-.mobile-nav .nav-item svg {
-  width: 22px;
-  height: 22px;
-}
-
-.mobile-nav .nav-item.active {
-  color: var(--accent);
+.missing {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 /* ---------- Responsive ---------- */
@@ -1122,41 +813,7 @@ svg {
   .sidebar {
     display: none;
   }
-  .mobile-nav {
-    display: flex;
-  }
   .form-grid {
     grid-template-columns: 1fr;
-  }
-  .playlist-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 12px;
-  }
-}
-
-/*
-  Mobile phones specifically (not just "narrow browser window"): bigger
-  touch targets, a full-width mini player, and a player page that uses the
-  whole screen without the sidebar's assumptions.
-*/
-@media (max-width: 480px) {
-  .topbar {
-    padding: 12px 16px;
-  }
-  .content {
-    padding: 16px 16px 24px;
-  }
-  .mini-player {
-    padding: 8px 12px;
-  }
-  .player-control-btn svg {
-    width: 24px;
-    height: 24px;
-  }
-  .reshuffle-btn span {
-    display: none; /* icon-only on small screens to avoid wrapping/crowding */
-  }
-  .reshuffle-btn {
-    padding: 12px;
   }
 }

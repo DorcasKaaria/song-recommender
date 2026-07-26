@@ -11,16 +11,11 @@
  * so the indicator stays accurate if the backend goes down/comes back up
  * while the page is open.
  *
- * Uses apiCall() (utils.js) like every other request in the app, so this
- * check gets the same retry-with-timeout behavior (see "When something
- * goes wrong" in the README) — it won't flip to "Offline" on one hiccup,
- * only after the full retry budget is exhausted.
- *
  * WHERE TO CHANGE THINGS:
  *   - This pings GET /songs as a lightweight "is the backend up" check. If
  *     your backend has a dedicated health-check route (e.g. GET /health),
- *     point ENDPOINTS.songs() below at that instead — it's cheaper than
- *     fetching the whole song list just to check status.
+ *     point the fetch below at that instead — it's cheaper than fetching
+ *     the whole song list just to check status.
  * -----------------------------------------------------------------------------
  */
 
@@ -30,14 +25,14 @@ async function checkApiStatus() {
   const dot = document.getElementById('apiStatusDot');
   const text = document.getElementById('apiStatusText');
 
-  const { error } = await apiCall(ENDPOINTS.songs());
-
-  if (error) {
-    dot.className = 'status-dot status-offline';
-    text.textContent = 'API Offline / Unreachable';
-  } else {
+  try {
+    const res = await fetch(ENDPOINTS.songs(), { signal: AbortSignal.timeout(2500) });
+    if (!res.ok) throw new Error(`Status ${res.status}`);
     dot.className = 'status-dot status-online';
     text.textContent = 'API Active';
+  } catch (err) {
+    dot.className = 'status-dot status-offline';
+    text.textContent = 'API Offline / Unreachable';
   }
 }
 
