@@ -12,15 +12,29 @@
  */
 
 // Falls back to a default if env.js wasn't copied from env.example.js yet.
-const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "https://soundwave-api-0mgh.onrender.com";
+const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "http://127.0.0.1:8000";
 
 const ENDPOINTS = {
-  songs: () => `${API_BASE}/songs`,
+  // Home
+  playlists: () => `${API_BASE}/playlists`,
+
+  // Home -> clicking a playlist tile
+  playlistSongs: (playlistId) => `${API_BASE}/playlists/${playlistId}/songs`,
+
+  // Search page (plain text search)
   search: (q) => `${API_BASE}/songs/search?q=${encodeURIComponent(q)}`,
-  recommend: (id) => `${API_BASE}/recommend/${id}`,
-  predictFeatures: (id) => `${API_BASE}/predict-features/${id}`,
-  addSong: () => `${API_BASE}/songs`,
-  // NOTE: singular "song" (not "songs") — this is intentional, matching
-  // the backend's actual update route. Don't "fix" this into /songs/{id}.
-  updateSong: (id) => `${API_BASE}/song/${id}`,
+
+  // Health Check / Root page
+  health: () => `${API_BASE}/`,
+
+  // Random songs for testing
+  random: () => `${API_BASE}/songs/random`,
+
+  // Player page's "Recommend Similar Songs" button and the Playlist
+  // page's recommend button both queue results via queueSongs() (see
+  // player.js). track_id / playlist_id / artists are mutually exclusive
+  // across these — never combine them in one call.
+  recommendByTrack: (trackId) => `${API_BASE}/recommend?track_id=${encodeURIComponent(trackId)}`,
+  recommendByArtists: (artists) => `${API_BASE}/recommend?artists=${encodeURIComponent(artists)}`,
+  recommendByPlaylist: (playlistId) => `${API_BASE}/recommend?playlist_id=${encodeURIComponent(playlistId)}`,
 };

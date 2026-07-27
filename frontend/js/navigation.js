@@ -1,10 +1,10 @@
 /**
  * navigation.js
  * -----------------------------------------------------------------------------
- * Handles switching between the "pages" (Home, Search, Recommendations,
- * Predict Genre, Predict Popularity, Add Song). This is a single-page app:
- * every page already exists in index.html, and goToPage() just shows/hides
- * the right <section class="page"> and highlights the right sidebar button.
+ * Handles switching between the "pages" (Home, Search, Player, Add Song).
+ * This is a single-page app: every page already exists in index.html, and
+ * goToPage() just shows/hides the right <section class="page"> and
+ * highlights the right sidebar button.
  * -----------------------------------------------------------------------------
  */
 

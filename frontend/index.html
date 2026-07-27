@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Soundwave — Music Discovery</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='9' width='4.5' height='13' rx='2.25' fill='%231d78e2'/%3E%3Crect x='9.75' y='2' width='4.5' height='20' rx='2.25' fill='%231d78e2'/%3E%3Crect x='17' y='12' width='4.5' height='10' rx='2.25' fill='%231d78e2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=1">
 </head>
 
 <body>
@@ -36,19 +36,20 @@
           </svg>
           Search
         </button>
-      </div>
-      <div class="sidebar-divider"></div>
-      <div class="nav-section">
-        <div
-          style="padding:0 12px; color:var(--text-subdued); font-size:12px; font-weight:700; text-transform:uppercase; margin-bottom:4px;">
-          Tools</div>
-        <button class="nav-item" data-page="add">
+        <button class="nav-item" data-page="player">
           <svg viewBox="0 0 24 24">
-            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4z" />
+            <path d="M8 5v14l11-7z" />
           </svg>
-          Add Song
+          Player
+        </button>
+        <button class="nav-item" data-page="queue">
+          <svg viewBox="0 0 24 24">
+            <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+          </svg>
+          Queue
         </button>
       </div>
+      <div class="sidebar-divider"></div>
       <div class="sidebar-card">
         <div class="status-row">
           <span class="status-dot" id="apiStatusDot"></span>
@@ -87,15 +88,10 @@
 
         <!-- HOME PAGE -->
         <section class="page active" id="page-home">
-          <h1 class="page-title">Good evening</h1>
-          <div class="stat-strip" id="statStrip"></div>
-          <div class="section-header">
-            <h2 class="section-title">All Songs</h2>
-            <button class="btn btn-secondary" id="refreshSongsBtn">Refresh</button>
-          </div>
-          <div id="homeSongsContainer">
+          <h1 class="page-title" id="homeGreeting">Good evening</h1>
+          <div id="playlistsContainer">
             <div class="loading">
-              <div class="spinner"></div> Loading songs…
+              <div class="spinner"></div> Loading playlists…
             </div>
           </div>
         </section>
@@ -121,111 +117,190 @@
           </div>
         </section>
 
-        <!-- ADD SONG PAGE -->
-        <section class="page" id="page-add">
-          <h1 class="page-title">Add New Song</h1>
-          <p style="color:var(--text-subdued); margin-bottom:8px;">Add a new song to the database.</p>
-          <div class="panel">
-            <div class="form-grid">
-              <div class="form-group">
-                <label for="addTitle">Title</label>
-                <input type="text" id="addTitle" placeholder="Song title">
-              </div>
-              <div class="form-group">
-                <label for="addArtist">Artist</label>
-                <input type="text" id="addArtist" placeholder="Artist name">
-              </div>
-              <div class="form-group">
-                <label for="addAlbum">Album</label>
-                <input type="text" id="addAlbum" placeholder="Album name">
-              </div>
-              <div class="form-group">
-                <label for="addGenre">Genre</label>
-                <select id="addGenre">
-                  <option>Pop</option>
-                  <option>Hip-Hop</option>
-                  <option>Rock</option>
-                  <option>Electronic</option>
-                  <option>R&B</option>
-                  <option>Jazz</option>
-                  <option>Classical</option>
-                  <option>Country</option>
-                  <option>Afrobeat</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="addDuration">Duration (seconds)</label>
-                <input type="number" id="addDuration" placeholder="210" min="1">
-              </div>
-              <div class="form-group">
-                <label for="addExplicit">Explicit</label>
-                <label class="checkbox-row">
-                  <input type="checkbox" id="addExplicit">
-                  <span>Contains explicit content</span>
-                </label>
-              </div>
-              <div class="form-group full" id="addAudioFeatures"></div>
+        <!-- PLAYLIST PAGE (opened by clicking a playlist tile on Home) -->
+        <section class="page" id="page-playlist">
+          <button class="back-btn" id="playlistBackBtn">
+            <svg viewBox="0 0 24 24"><path d="M15.5 3.5L7 12l8.5 8.5 1.5-1.5L10 12l7-7z" /></svg>
+            Back
+          </button>
+
+          <div class="playlist-header">
+            <img class="playlist-header-art" id="playlistHeaderArt" src="" alt="">
+            <div class="playlist-header-info">
+              <span class="playlist-header-label">Playlist</span>
+              <h1 class="playlist-header-title" id="playlistHeaderTitle">—</h1>
+              <p class="playlist-header-description" id="playlistHeaderDescription"></p>
+              <span class="playlist-header-meta" id="playlistHeaderMeta"></span>
             </div>
-            <div class="btn-row">
-              <button class="btn btn-primary" id="addSongBtn">Add Song to Database</button>
-              <button class="btn btn-secondary" id="addSongClearBtn">Clear Form</button>
+          </div>
+
+          <button class="btn btn-primary playlist-play-btn" id="playlistPlayBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z" /></svg>
+            Play
+          </button>
+
+          <ul class="track-list" id="playlistTrackList"></ul>
+
+          <div class="recommend-section">
+            <button class="recommend-cta" id="refreshPlaylistRecommendationsBtn">
+              <img class="recommend-cta-art" id="playlistRecommendArt" src="" alt="">
+              <span class="recommend-cta-label">Recommend Songs similar to ones in this playlist</span>
+            </button>
+
+            <div id="playlistRecommendSection" style="display:none;">
+              <h3 class="section-title" style="margin:20px 0 4px;">Recommended Songs</h3>
+              <p class="tab-hint" style="margin-bottom:8px;">Based on the songs in this playlist</p>
+              <ul class="track-list" id="playlistRecommendResults"></ul>
             </div>
           </div>
         </section>
 
+        <!-- PLAYER PAGE -->
+        <section class="page" id="page-player">
+          <div class="empty-state" id="playerEmptyState" style="padding:80px 16px;">
+            <p>Nothing is playing yet. Open a playlist from Home, or search for a song.</p>
+          </div>
+
+          <div class="player-content" id="playerContent" style="display:none;">
+            <div class="player-source-label" id="playerSourceLabel"></div>
+            <img class="player-cover-art" id="playerCoverArt" src="" alt="">
+
+            <div class="player-track-info">
+              <div class="player-track-title" id="playerTrackTitle">—</div>
+              <div class="player-track-artist" id="playerTrackArtist">—</div>
+            </div>
+
+            <div class="player-controls">
+              <button class="player-control-btn" id="playerPrevBtn" title="Previous">
+                <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" /></svg>
+              </button>
+              <button class="player-control-btn player-control-btn-main" id="playerPlayPauseBtn" title="Play/Pause">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              </button>
+              <button class="player-control-btn" id="playerNextBtn" title="Next">
+                <svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z" /></svg>
+              </button>
+            </div>
+
+            <!--
+              The actual Spotify iFrame API player is mounted here — kept
+              small and tucked below our own controls on purpose. Our big
+              cover art / title / prev / play / next above are the "face"
+              of the player; this frame is just the engine driving sound.
+              See js/playbackEngine.js for why this split makes it easy to
+              swap in real streamed audio later without any UI changes.
+            -->
+            <div class="spotify-engine-frame" id="spotifyEngineFrame"></div>
+
+            <div id="playerCreditsContainer"></div>
+
+            <div class="recommend-section">
+              <h3 class="section-title">Recommend Similar Songs</h3>
+              <button class="recommend-cta" id="recommendSimilarSongsBtn">
+                <img class="recommend-cta-art" id="recommendSimilarSongsArt" src="" alt="">
+                <span class="recommend-cta-label">Recommend Similar Songs</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- QUEUE PAGE -->
+        <section class="page" id="page-queue">
+          <h1 class="page-title">Queue</h1>
+
+          <div class="queue-source-banner" id="queueSourceBanner">Nothing queued yet.</div>
+
+          <ul class="track-list" id="queueTrackList"></ul>
+        </section>
+
       </div>
+
+      <!-- MINI PLAYER BAR — persistent across pages, hidden until something is playing -->
+      <div class="mini-player" id="miniPlayer">
+        <img class="mini-player-art" id="miniPlayerArt" src="" alt="">
+        <div class="mini-player-info">
+          <div class="mini-player-title" id="miniPlayerTitle">—</div>
+          <div class="mini-player-artist" id="miniPlayerArtist">—</div>
+        </div>
+        <button class="icon-btn" id="miniPlayerPlayPauseBtn" title="Play/Pause">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+        </button>
+      </div>
+
+      <!--
+        MOBILE BOTTOM NAV — only visible on narrow screens (see the
+        max-width: 800px media query in style.css, the same breakpoint
+        that hides .sidebar). Without this, there is no way to navigate
+        at all on mobile once the sidebar disappears. These buttons reuse
+        the exact same .nav-item[data-page] pattern as the sidebar, so
+        navigation.js wires them up automatically — no extra JS needed.
+      -->
+      <nav class="mobile-nav">
+        <button class="nav-item active" data-page="home" title="Home">
+          <svg viewBox="0 0 24 24">
+            <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V21h5v-6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6h5V7.577l-7.5-4.33z" />
+          </svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-item" data-page="search" title="Search">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M10.533 1.279c-5.18 0-9.407 4.14-9.407 9.279s4.226 9.279 9.407 9.279c2.234 0 4.29-.77 5.907-2.058l4.353 4.353a1 1 0 1 0 1.414-1.414l-4.344-4.344a9.157 9.157 0 0 0 2.077-5.816c0-5.14-4.226-9.28-9.407-9.28zm-7.407 9.279c0-4.006 3.302-7.279 7.407-7.279s7.407 3.273 7.407 7.279-3.302 7.279-7.407 7.279-7.407-3.273-7.407-7.279z" />
+          </svg>
+          <span>Search</span>
+        </button>
+        <button class="nav-item" data-page="player" title="Player">
+          <svg viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <span>Player</span>
+        </button>
+        <button class="nav-item" data-page="queue" title="Queue">
+          <svg viewBox="0 0 24 24">
+            <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+          </svg>
+          <span>Queue</span>
+        </button>
+      </nav>
     </main>
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- SONG DETAIL POPUP (opened by clicking a song on Home or Search) -->
-  <div class="modal-overlay" id="songModalOverlay">
-    <div class="modal">
-      <div class="modal-header">
-        <div>
-          <div class="modal-song-title" id="modalSongTitle">—</div>
-          <div class="modal-song-artist" id="modalSongArtist">—</div>
-        </div>
-        <button class="modal-close" id="modalCloseBtn" title="Close">&times;</button>
-      </div>
-      <div class="modal-tabs-wrapper">
-        <button class="modal-tab-arrow" id="modalTabsLeft" type="button" aria-label="Scroll tabs left">&#8249;</button>
-        <div class="modal-tabs" id="modalTabsScroll">
-          <button class="modal-tab active" data-tab="spotify">Spotify</button>
-          <button class="modal-tab" data-tab="youtube">YouTube</button>
-          <button class="modal-tab" data-tab="recommend">Recommendations</button>
-          <button class="modal-tab" data-tab="features">Song Features</button>
-          <button class="modal-tab" data-tab="predict">Predict Features</button>
-        </div>
-        <button class="modal-tab-arrow" id="modalTabsRight" type="button" aria-label="Scroll tabs right">&#8250;</button>
-      </div>
-      <div class="modal-body" id="modalBody"></div>
-    </div>
-  </div>
-
   <!--
     Scripts are loaded in dependency order (no bundler / build step, so this
     order matters — see frontend/README.md "Load order" section for why).
+
+    The "?v=1" on every local script/css tag is a manual cache-buster: browsers
+    aggressively cache plain <script src="..."> files, so after editing ANY
+    file in js/ or css/, bump this number (e.g. "?v=2") on ALL of these tags
+    at once — otherwise some visitors' browsers may keep using an old
+    cached copy of one file alongside new copies of the others, which can
+    cause confusing "X is not defined" errors from mismatched versions.
   -->
-  <script src="js/env.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/apiStatus.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/featureForm.js"></script>
-  <script src="js/navigation.js"></script>
-  <script src="js/home.js"></script>
-  <script src="js/search.js"></script>
-  <script src="js/songModal.js"></script>
+  <script src="js/env.js?v=1"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/utils.js?v=1"></script>
+  <script src="js/apiStatus.js?v=1"></script>
+  <script src="js/playbackEngine.js?v=1"></script>
   <!--
-    Spotify's official iFrame API (used by the Spotify tab in songModal.js).
-    Loaded AFTER songModal.js on purpose: songModal.js defines
-    window.onSpotifyIframeApiReady, which this script calls once it loads —
-    that function must exist first, or the callback would never fire.
+    Spotify's official iFrame API. Loaded AFTER playbackEngine.js on
+    purpose: playbackEngine.js defines window.onSpotifyIframeApiReady,
+    which this script calls once it loads — that function must exist first.
   -->
   <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
-  <script src="js/addSong.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/navigation.js?v=1"></script>
+  <script src="js/home.js?v=1"></script>
+  <script src="js/search.js?v=1"></script>
+  <script src="js/player.js?v=1"></script>
+  <!--
+    playlistPage.js and queuePage.js both call onPlaybackChange() (defined
+    in player.js) at the top level, so they must load AFTER player.js.
+  -->
+  <script src="js/playlistPage.js?v=1"></script>
+  <script src="js/queuePage.js?v=1"></script>
+  <script src="js/playerPage.js?v=1"></script>
+  <script src="js/main.js?v=1"></script>
 </body>
 
 </html>

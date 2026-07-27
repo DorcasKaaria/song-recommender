@@ -1,61 +1,13 @@
-# Project: Music Recommendation System 2.0
+# SoundWave: Music Recommendation
 
-## Objective
+## Hypothesis Evolution
 
-Build and deploy a full-stack music recommendation web application that allows users to search songs, receive recommendations, predict song attributes, and manage a music database.
+Version 1: Recommending randomly picked songs makes for good recommendations.
 
-## Tech Stack
+Status: Replaced
 
-- **Database:** SQLite
-- **Backend:** FastAPI
-- **Machine Learning:** Scikit-learn
-- **Frontend:** HTML, CSS, JavaScript
-- **Deployment:** Render
+Version 2: Recommending new songs based on a user's known liked songs (their "taste vector") would produce higher quality recommendations than recommending songs without considering user preferences.
 
-## Machine Learning Components
-
-### Recommendation
-- Recommend 10 similar songs using **K-Nearest Neighbors** with **cosine similarity**.
-
-### Popularity Prediction
-- Predict a song's popularity score using the better-performing model between:
-  - KNN Regressor
-  - Decision Tree Regressor
-
-## API Endpoints
-
-### `GET /songs`
-Returns all songs in the database.
-
-### `GET /songs/search?q=<query>`
-Search for songs by title or artist.
-
-### `GET /recommend/{song_id}`
-Returns the 10 most similar songs.
-
-### `POST /predict-popularity`
-Predicts a song's popularity score from its audio features.
-
-### `POST /songs`
-Adds a new song to the database.
-
-## Frontend Features
-
-- Search songs
-- View song recommendations
-- Predict genre
-- Predict popularity
-- Add new songs to the database
-
-## Expected Outcome
-
-A deployed web application that integrates:
-
-- Data storage with SQLite
-- Machine learning models
-- REST APIs with FastAPI
-- Interactive frontend
-- Cloud deployment on Render
 
 ## Dataset
 
