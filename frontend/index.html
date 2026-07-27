@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Soundwave — Music Discovery</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2.5' y='9' width='4.5' height='13' rx='2.25' fill='%231d78e2'/%3E%3Crect x='9.75' y='2' width='4.5' height='20' rx='2.25' fill='%231d78e2'/%3E%3Crect x='17' y='12' width='4.5' height='10' rx='2.25' fill='%231d78e2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=1">
 </head>
 
 <body>
@@ -140,6 +140,19 @@
           </button>
 
           <ul class="track-list" id="playlistTrackList"></ul>
+
+          <div class="recommend-section">
+            <button class="recommend-cta" id="refreshPlaylistRecommendationsBtn">
+              <img class="recommend-cta-art" id="playlistRecommendArt" src="" alt="">
+              <span class="recommend-cta-label">Recommend Songs similar to ones in this playlist</span>
+            </button>
+
+            <div id="playlistRecommendSection" style="display:none;">
+              <h3 class="section-title" style="margin:20px 0 4px;">Recommended Songs</h3>
+              <p class="tab-hint" style="margin-bottom:8px;">Based on the songs in this playlist</p>
+              <ul class="track-list" id="playlistRecommendResults"></ul>
+            </div>
+          </div>
         </section>
 
         <!-- PLAYER PAGE -->
@@ -149,6 +162,7 @@
           </div>
 
           <div class="player-content" id="playerContent" style="display:none;">
+            <div class="player-source-label" id="playerSourceLabel"></div>
             <img class="player-cover-art" id="playerCoverArt" src="" alt="">
 
             <div class="player-track-info">
@@ -179,6 +193,14 @@
             <div class="spotify-engine-frame" id="spotifyEngineFrame"></div>
 
             <div id="playerCreditsContainer"></div>
+
+            <div class="recommend-section">
+              <h3 class="section-title">Recommend Similar Songs</h3>
+              <button class="recommend-cta" id="recommendSimilarSongsBtn">
+                <img class="recommend-cta-art" id="recommendSimilarSongsArt" src="" alt="">
+                <span class="recommend-cta-label">Recommend Similar Songs</span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -187,21 +209,6 @@
           <h1 class="page-title">Queue</h1>
 
           <div class="queue-source-banner" id="queueSourceBanner">Nothing queued yet.</div>
-
-          <div class="reshuffle-row">
-            <button class="reshuffle-btn" id="shuffleRandomBtn">
-              <svg viewBox="0 0 24 24"><path d="M14.83 13.41l1.79 1.79-3.17 3.17 1.41 1.41L18.03 16.2l1.79 1.79V13H14.83zM14.5 4.6l1.79 1.79L4.35 18.32l1.41 1.41L17.7 7.79l1.79 1.79V4.6H14.5zM4.35 5.68L13 14.33V19.03H8.65L4.35 14.73l1.41-1.41 2.83 2.83h.71v-.71L6.35 12.35 4.35 5.68z"/></svg>
-              <span>Shuffle Random</span>
-            </button>
-            <button class="reshuffle-btn" id="shufflePlaylistBtn">
-              <svg viewBox="0 0 24 24"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>
-              <span>Shuffle Playlist</span>
-            </button>
-            <button class="reshuffle-btn" id="shuffleRecommendedBtn">
-              <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-              <span>Shuffle Recommended</span>
-            </button>
-          </div>
 
           <ul class="track-list" id="queueTrackList"></ul>
         </section>
@@ -260,57 +267,40 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- "PLAY RECOMMENDED" DIALOG — choose a song or playlist to base recommendations on -->
-  <div class="modal-overlay" id="recommendDialogOverlay">
-    <div class="modal recommend-dialog">
-      <div class="modal-header">
-        <div class="modal-song-title">Play Recommended</div>
-        <button class="modal-close" id="recommendDialogClose" title="Close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="tab-hint">What do you want recommendations based on?</p>
-
-        <div class="form-group" style="margin-top:12px;">
-          <label for="recommendSongSearch">Search a song</label>
-          <input type="text" id="recommendSongSearch" placeholder="Search by title or artist...">
-        </div>
-        <div id="recommendSongResults"></div>
-
-        <div class="form-group" style="margin-top:20px;">
-          <label>Or choose a playlist</label>
-        </div>
-        <div id="recommendPlaylistResults"></div>
-      </div>
-    </div>
-  </div>
-
   <!--
     Scripts are loaded in dependency order (no bundler / build step, so this
     order matters — see frontend/README.md "Load order" section for why).
+
+    The "?v=1" on every local script/css tag is a manual cache-buster: browsers
+    aggressively cache plain <script src="..."> files, so after editing ANY
+    file in js/ or css/, bump this number (e.g. "?v=2") on ALL of these tags
+    at once — otherwise some visitors' browsers may keep using an old
+    cached copy of one file alongside new copies of the others, which can
+    cause confusing "X is not defined" errors from mismatched versions.
   -->
-  <script src="js/env.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/apiStatus.js"></script>
-  <script src="js/playbackEngine.js"></script>
+  <script src="js/env.js?v=1"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/utils.js?v=1"></script>
+  <script src="js/apiStatus.js?v=1"></script>
+  <script src="js/playbackEngine.js?v=1"></script>
   <!--
     Spotify's official iFrame API. Loaded AFTER playbackEngine.js on
     purpose: playbackEngine.js defines window.onSpotifyIframeApiReady,
     which this script calls once it loads — that function must exist first.
   -->
   <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
-  <script src="js/navigation.js"></script>
-  <script src="js/home.js"></script>
-  <script src="js/search.js"></script>
-  <script src="js/player.js"></script>
+  <script src="js/navigation.js?v=1"></script>
+  <script src="js/home.js?v=1"></script>
+  <script src="js/search.js?v=1"></script>
+  <script src="js/player.js?v=1"></script>
   <!--
     playlistPage.js and queuePage.js both call onPlaybackChange() (defined
     in player.js) at the top level, so they must load AFTER player.js.
   -->
-  <script src="js/playlistPage.js"></script>
-  <script src="js/queuePage.js"></script>
-  <script src="js/playerPage.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/playlistPage.js?v=1"></script>
+  <script src="js/queuePage.js?v=1"></script>
+  <script src="js/playerPage.js?v=1"></script>
+  <script src="js/main.js?v=1"></script>
 </body>
 
 </html>

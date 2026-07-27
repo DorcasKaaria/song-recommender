@@ -1,25 +1,23 @@
 /**
  * queuePage.js
  * -----------------------------------------------------------------------------
- * The Queue page: shows
- *   1. A persistent banner describing WHY the queue is what it is —
- *      "Playing songs like X, Y" / "Playing songs similar to Playlist: Z" /
- *      "Playing randomly selected songs" / "Playing from Playlist: Z" —
- *      built by getQueueSourceLabel() in player.js.
- *   2. The three Shuffle buttons + the "Play Recommended" dialog trigger.
- *      These used to live on the Player page — they've moved here so that
- *      changing what's playing next is a deliberate, queue-focused action:
- *      you open the Queue page and switch strategy, rather than it being
- *      buried under playback controls.
- *   3. The full list of songs currently in the queue, with the currently
- *      playing one highlighted. Clicking any song jumps straight to it
- *      (see jumpToQueueIndex() in player.js) — no re-fetch needed, it's
- *      already loaded.
+ * The Queue page: a persistent banner describing WHY the current song is
+ * queued (same getCurrentSourceLabel() the Player page shows — see
+ * player.js — so the two can never disagree), followed by the full list
+ * of songs currently in the queue with the currently playing one
+ * highlighted. Clicking any song jumps straight to it (skipping past
+ * everything before it — see jumpToQueueIndex() in player.js).
+ *
+ * There's no reshuffle/recommend UI here anymore — all of that now lives
+ * on the Player page (recommend based on what's playing) and the Playlist
+ * page (recommend based on a playlist). This page is purely "what's in
+ * the queue right now, and why."
  * -----------------------------------------------------------------------------
  */
 
-function queueRowHTML(song, index) {
-  const isCurrent = index === queueIndex;
+function queueRowHTML(entry, index) {
+  const song = entry.song;
+  const isCurrent = index === 0;
   const thumb = song.track_image
     ? `<img src="${escapeHTML(song.track_image)}" alt="" loading="lazy">`
     : `<div class="search-row-fallback">🎵</div>`;
@@ -40,30 +38,22 @@ function queueRowHTML(song, index) {
 function renderQueuePage() {
   const banner = document.getElementById('queueSourceBanner');
   const list = document.getElementById('queueTrackList');
-  const label = getQueueSourceLabel();
+  const q = getQueue();
 
-  banner.textContent = label || 'Nothing queued yet — play a playlist, or search for a song.';
+  banner.textContent = getCurrentSourceLabel() || 'Your queue is empty — play a playlist, or search for a song.';
 
-  // "Shuffle Playlist" only makes sense once a playlist has actually been
-  // played this session (see README "Session playlist").
-  document.getElementById('shufflePlaylistBtn').disabled = !hasSessionPlaylist();
-
-  if (queue.length === 0) {
+  if (q.length === 0) {
     list.innerHTML = `<div class="empty-state"><p>Your queue is empty.</p></div>`;
     return;
   }
 
-  list.innerHTML = queue.map((s, i) => queueRowHTML(s, i)).join('');
+  list.innerHTML = q.map((entry, i) => queueRowHTML(entry, i)).join('');
   list.querySelectorAll('.track-row').forEach(row => {
     row.addEventListener('click', () => {
       jumpToQueueIndex(parseInt(row.dataset.index, 10));
     });
   });
 }
-
-document.getElementById('shuffleRandomBtn').addEventListener('click', shuffleRandom);
-document.getElementById('shufflePlaylistBtn').addEventListener('click', shufflePlaylist);
-document.getElementById('shuffleRecommendedBtn').addEventListener('click', shuffleRecommended);
 
 onPlaybackChange(renderQueuePage);
 

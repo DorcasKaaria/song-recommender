@@ -5,8 +5,8 @@
  * Listens on both the top bar search box and the dedicated Search page box.
  * Debounces input so it doesn't search on every single keystroke.
  *
- * Clicking a result queues it right after the current song and plays it
- * immediately (see enqueueNextAndPlay() in player.js).
+ * Clicking a result adds it to the front of the queue and plays it
+ * immediately (see queueSongs() in player.js).
  * -----------------------------------------------------------------------------
  */
 
@@ -55,8 +55,7 @@ function handleSearchInput(query) {
 
     resultsDiv.querySelectorAll('.search-row').forEach((row, i) => {
       row.addEventListener('click', () => {
-        enqueueNextAndPlay(results[i]);
-        goToPage('player');
+        queueSongs([results[i]], { label: 'Playing from Search' });
       });
     });
   }, 350);

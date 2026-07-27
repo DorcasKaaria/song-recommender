@@ -5,17 +5,22 @@
  * never disagree with each other:
  *   1. The mini player bar — a persistent strip pinned above the bottom nav,
  *      visible on every page once something is playing.
- *   2. The full Player page — big cover art, prev/play-pause/next, and the
- *      Credits list underneath.
+ *   2. The full Player page — a small "why is this playing" label, big
+ *      cover art, prev/play-pause/next, the Credits list, and (below that)
+ *      a single "Recommend Similar Songs" button.
  *
- * The three Shuffle buttons and the "Play Recommended" dialog trigger used
- * to live on this page — they've moved to the Queue page (see
- * queuePage.js), since recommendations/shuffling are now a deliberate,
- * queue-focused action rather than something buried under the player.
+ * "Recommend Similar Songs" is based on whatever is CURRENTLY PLAYING. It
+ * calls BOTH GET /recommend?track_id= (songs like this exact track) and
+ * GET /recommend?artists= (songs by similar artists) in parallel, merges
+ * the two result sets into one batch, and queues them together via
+ * queueSongs() (player.js) — one click, one combined recommendation.
  *
  * Both re-render every time player.js calls notifyPlaybackChange() (song
- * changed, play/pause toggled, etc) via onPlaybackChange() below — neither
- * one fetches or mutates playback state directly.
+ * changed, play/pause toggled, a recommendation got queued, etc) via
+ * onPlaybackChange() below — neither one fetches or mutates playback
+ * state directly except the three recommend buttons, which call
+ * queueSongs() and let the resulting notifyPlaybackChange() re-render
+ * everything as usual.
  *
  * The Spotify iFrame embed itself is mounted once into #spotifyEngineFrame
  * (kept small on purpose — see the note in playbackEngine.js) and is never
@@ -56,13 +61,15 @@ function renderPlayerPage() {
   emptyState.style.display = 'none';
   content.style.display = 'flex';
 
+  document.getElementById('playerSourceLabel').textContent = getCurrentSourceLabel() || '';
   document.getElementById('playerCoverArt').src = song.track_image || '';
   document.getElementById('playerTrackTitle').textContent = song.track_name;
   document.getElementById('playerTrackArtist').textContent = song.artists;
   document.getElementById('playerPlayPauseBtn').innerHTML = isPaused ? PLAY_ICON_SVG : PAUSE_ICON_SVG;
-  document.getElementById('playerPrevBtn').disabled = queueIndex <= 0;
+  document.getElementById('playerPrevBtn').disabled = queue.length <= 1 && history.length === 0;
 
   renderCredits(song);
+  renderRecommendOptions(song);
 }
 
 /**
@@ -91,6 +98,43 @@ function renderCredits(song) {
   `;
 }
 
+function renderRecommendOptions(song) {
+  // No dedicated artwork endpoint exists for this action, so it reuses
+  // the current song's own cover art — same simplification Spotify itself
+  // falls back to when it doesn't have bespoke art for a shelf.
+  document.getElementById('recommendSimilarSongsArt').src = song.track_image || '';
+}
+
+/**
+ * Fires GET /recommend?track_id= and GET /recommend?artists= in parallel
+ * (based on whatever's currently playing), merges both result sets, and
+ * queues them together as one batch.
+ */
+async function runRecommendSimilarSongs() {
+  const song = getCurrentSong();
+  if (!song) return;
+
+  const [byTrack, byArtists] = await Promise.all([
+    apiCall(ENDPOINTS.recommendByTrack(song.track_id)),
+    apiCall(ENDPOINTS.recommendByArtists(song.artists)),
+  ]);
+
+  // If either call failed, still use whatever the other one returned —
+  // only bail out if both failed.
+  if (byTrack.error && byArtists.error) {
+    showToast(byTrack.error, 'error');
+    return;
+  }
+
+  const merged = [...(byTrack.data || []), ...(byArtists.data || [])];
+  if (merged.length === 0) {
+    showToast('No songs found.', 'error');
+    return;
+  }
+
+  queueSongs(merged, { label: `Playing songs similar to ${song.track_name}, ${song.artists}` });
+}
+
 /* ---------------- Wiring ---------------- */
 
 document.getElementById('miniPlayer').addEventListener('click', (e) => {
@@ -105,6 +149,8 @@ document.getElementById('miniPlayerPlayPauseBtn').addEventListener('click', (e) 
 document.getElementById('playerPlayPauseBtn').addEventListener('click', togglePlayPause);
 document.getElementById('playerNextBtn').addEventListener('click', playNext);
 document.getElementById('playerPrevBtn').addEventListener('click', playPrevious);
+
+document.getElementById('recommendSimilarSongsBtn').addEventListener('click', runRecommendSimilarSongs);
 
 onPlaybackChange(() => {
   renderMiniPlayer();

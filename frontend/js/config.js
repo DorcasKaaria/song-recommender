@@ -21,15 +21,20 @@ const ENDPOINTS = {
   // Home -> clicking a playlist tile
   playlistSongs: (playlistId) => `${API_BASE}/playlists/${playlistId}/songs`,
 
-  // Search page
+  // Search page (plain text search)
   search: (q) => `${API_BASE}/songs/search?q=${encodeURIComponent(q)}`,
 
-  // Queue sources (see player.js)
-  songs: () => `${API_BASE}/songs`, // Shuffle Random
+  // Health Check / Root page
+  health: () => `${API_BASE}/`,
 
-  // Shuffle Recommended — the two are mutually exclusive: exactly one of
-  // track_id / playlist_id is sent, depending on what the user picked in
-  // the "Play Recommended" dialog. Never call both for the same request.
+  // Random songs for testing
+  random: () => `${API_BASE}/songs/random`,
+
+  // Player page's "Recommend Similar Songs" button and the Playlist
+  // page's recommend button both queue results via queueSongs() (see
+  // player.js). track_id / playlist_id / artists are mutually exclusive
+  // across these — never combine them in one call.
   recommendByTrack: (trackId) => `${API_BASE}/recommend?track_id=${encodeURIComponent(trackId)}`,
+  recommendByArtists: (artists) => `${API_BASE}/recommend?artists=${encodeURIComponent(artists)}`,
   recommendByPlaylist: (playlistId) => `${API_BASE}/recommend?playlist_id=${encodeURIComponent(playlistId)}`,
 };

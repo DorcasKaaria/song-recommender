@@ -15,12 +15,6 @@
  * check gets the same retry-with-timeout behavior (see "When something
  * goes wrong" in the README) — it won't flip to "Offline" on one hiccup,
  * only after the full retry budget is exhausted.
- *
- * WHERE TO CHANGE THINGS:
- *   - This pings GET /songs as a lightweight "is the backend up" check. If
- *     your backend has a dedicated health-check route (e.g. GET /health),
- *     point ENDPOINTS.songs() below at that instead — it's cheaper than
- *     fetching the whole song list just to check status.
  * -----------------------------------------------------------------------------
  */
 
@@ -30,7 +24,7 @@ async function checkApiStatus() {
   const dot = document.getElementById('apiStatusDot');
   const text = document.getElementById('apiStatusText');
 
-  const { error } = await apiCall(ENDPOINTS.songs());
+  const { error } = await apiCall(ENDPOINTS.health());
 
   if (error) {
     dot.className = 'status-dot status-offline';

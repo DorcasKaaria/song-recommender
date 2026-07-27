@@ -394,38 +394,6 @@ svg {
   margin-top: 20px;
 }
 
-/* ---------- Forms ---------- */
-/* (.form-group is still used by the "Play Recommended" dialog's search box) */
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-subdued);
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group select {
-  background: var(--bg-highlight);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
-  color: var(--text);
-  font-size: 14px;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
 /* ---------- Playlist grid (Home) ---------- */
 
 .playlist-grid {
@@ -713,6 +681,25 @@ svg {
   flex-shrink: 0;
 }
 
+.track-row-add {
+  color: var(--text-subdued);
+  font-size: 20px;
+  font-weight: 400;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.track-row:hover .track-row-add {
+  color: var(--text);
+  border-color: var(--text);
+}
+
 /* ---------- Queue page ---------- */
 
 .queue-source-banner {
@@ -752,73 +739,7 @@ svg {
   color: #fff;
 }
 
-/* ---------- Shared modal/dialog shell (used by the "Play Recommended" dialog) ---------- */
-
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 24px;
-}
-
-.modal-overlay.open {
-  display: flex;
-}
-
-.modal {
-  background: var(--bg-elevated);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 560px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 20px 20px 12px;
-}
-
-.modal-song-title {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.modal-song-artist {
-  font-size: 13px;
-  color: var(--text-subdued);
-  margin-top: 2px;
-}
-
-.modal-close {
-  background: transparent;
-  border: none;
-  color: var(--text-subdued);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-
-.modal-close:hover {
-  color: var(--text);
-  background: var(--bg-highlight);
-}
-
-.modal-body {
-  padding: 20px;
-  overflow-y: auto;
-}
+/* ---------- Shared small-text helpers ---------- */
 
 .tab-hint {
   color: var(--text-subdued);
@@ -829,40 +750,6 @@ svg {
 .error-text {
   color: var(--danger);
   font-weight: 600;
-}
-
-.rec-list {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.rec-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.rec-list-item:hover {
-  background: var(--bg-highlight);
-}
-
-.rec-list-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.rec-list-info span {
-  color: var(--text-subdued);
-  font-size: 12px;
 }
 
 /* ---------- Mini player bar ---------- */
@@ -1009,45 +896,56 @@ svg {
   overflow: hidden;
 }
 
-.reshuffle-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  width: 100%;
+.player-source-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-subdued);
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 
-.reshuffle-btn {
+.recommend-section {
+  width: 100%;
+  margin-top: 24px;
+}
+
+/* Thin, sleek recommend button — image on the left, label to the right,
+   used by both the Player page's "Recommend Similar Songs" and the
+   Playlist page's recommend button. */
+.recommend-cta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  color: var(--text);
   border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 6px 20px 6px 6px;
   cursor: pointer;
-  flex: 1 1 auto;
-  justify-content: center;
-  white-space: nowrap;
+  color: var(--text);
+  text-align: left;
 }
 
-.reshuffle-btn svg {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-}
-
-.reshuffle-btn:hover:not(:disabled) {
+.recommend-cta:hover {
   background: var(--bg-card-hover);
   border-color: var(--accent);
 }
 
-.reshuffle-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
+.recommend-cta-art {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-highlight);
+  flex-shrink: 0;
+}
+
+.recommend-cta-label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .credits-list {

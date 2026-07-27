@@ -409,3 +409,71 @@ GROUP BY
     p.collaborative
 ORDER BY p.name;
 """
+
+SEARCH_SONGS = """
+SELECT
+    ai.url AS track_image,
+    t.id AS track_id,
+    t.name AS track_name,
+    t.duration_ms,
+    t.popularity,
+    t.explicit,
+    a.name AS album_name,
+    STRING_AGG(DISTINCT ar.name, ', ' ORDER BY ar.name) AS artists
+FROM tracks t
+LEFT JOIN albums a
+    ON t.album_id = a.id
+LEFT JOIN album_images ai
+    ON a.id = ai.album_id
+   AND ai.image_order = 0
+LEFT JOIN track_artists ta
+    ON ta.track_id = t.id
+LEFT JOIN artists ar
+    ON ar.id = ta.artist_id
+WHERE
+    ar.name ILIKE %s
+    OR t.name ILIKE %s
+GROUP BY
+    ai.url,
+    t.id,
+    t.name,
+    t.duration_ms,
+    t.popularity,
+    t.explicit,
+    a.name
+ORDER BY
+    t.popularity DESC;
+"""
+
+
+RANDOM_SONGS = """
+SELECT
+    ai.url AS track_image,
+    t.id AS track_id,
+    t.name AS track_name,
+    t.duration_ms,
+    t.popularity,
+    t.explicit,
+    a.name AS album_name,
+    STRING_AGG(ar.name, ', ' ORDER BY ta.artist_order) AS artists
+FROM tracks t
+LEFT JOIN albums a
+    ON t.album_id = a.id
+LEFT JOIN album_images ai
+    ON a.id = ai.album_id
+   AND ai.image_order = 0
+LEFT JOIN track_artists ta
+    ON ta.track_id = t.id
+LEFT JOIN artists ar
+    ON ar.id = ta.artist_id
+GROUP BY
+    ai.url,
+    t.id,
+    t.name,
+    t.duration_ms,
+    t.popularity,
+    t.explicit,
+    a.name
+ORDER BY RANDOM()
+LIMIT 10;
+"""

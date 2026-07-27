@@ -74,8 +74,8 @@ function errorStateHTML(message = ERROR_MESSAGE) {
  * `container.innerHTML = errorStateHTML(error)` or `showToast(error, 'error')`.
  * Never let a failed request pass through silently.
  */
-const API_TOTAL_TIMEOUT_MS = 6700;   // report failure only after this long has passed, total
-const API_ATTEMPT_TIMEOUT_MS = 2500; // per-attempt timeout, so retries fit inside the budget above
+const API_TOTAL_TIMEOUT_MS = 8000;   // report failure only after this long has passed, total
+const API_ATTEMPT_TIMEOUT_MS = 4000; // per-attempt timeout, so retries fit inside the budget above
 const API_RETRY_DELAY_MS = 400;      // pause between retries
 
 function sleep(ms) {

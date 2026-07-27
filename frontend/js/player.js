@@ -1,32 +1,31 @@
 /**
  * player.js
  * -----------------------------------------------------------------------------
- * The one place that knows what's playing, what's next, and how to refill
- * the queue. The mini player bar, the Player page (playerPage.js), the
- * Playlist page (playlistPage.js), and the Queue page (queuePage.js) never
- * touch playback state directly — they call the functions here and
+ * The one place that knows what's playing, what's next, and how the queue
+ * grows and shrinks. The mini player bar, the Player page (playerPage.js),
+ * the Playlist page (playlistPage.js), and the Queue page (queuePage.js)
+ * never touch playback state directly — they call the functions here and
  * re-render via onPlaybackChange().
  *
- * QUEUE MODES (queueMode): 'random' | 'playlist' | 'recommended'
- *   - random:      refills from GET /songs
- *   - playlist:    refills from GET /playlists/{sessionPlaylistId}/songs —
- *                  the playlist last played (from the Playlist page). The
- *                  "Shuffle Playlist" button (on the Queue page) is
- *                  disabled until one has been played this session.
- *   - recommended: refills from GET /recommend?track_id={id} OR
- *                  GET /recommend?playlist_id={id} (mutually exclusive —
- *                  never both) depending on whether the user picked a
- *                  song or a playlist in the "Play Recommended" dialog
- *                  (see the bottom of this file). The dialog opens every
- *                  time Shuffle Recommended is pressed, so you can change
- *                  your mind.
+ * QUEUE MODEL — additive, not "modes":
+ *   `queue` is an array of { song, source } entries. queue[0] is always
+ *   "now playing" (or about to play). `source` is just { label: "..." } —
+ *   plain display text describing why this song is here, e.g. "Playing
+ *   from Playlist: Velocity" or "Playing songs similar to Under the
+ *   Influence, Chris Brown" — precomputed by whoever queued it. Both the
+ *   Player page and the Queue page read the SAME getCurrentSourceLabel(),
+ *   so they can never disagree (see README "Playback").
  *
- * In every mode, the queue is only refilled once it's actually exhausted
- * (simple "load everything, refill when empty" — see README "Playback").
+ *   queueSongs(songs, source) is the ONE function everything goes through
+ *   to add songs — clicking a playlist, clicking a search result, and
+ *   every "Recommend..." action. It always PREPENDS to the front of the
+ *   queue (played first) without clearing what's already there, then
+ *   guarantees playback actually starts (see ensurePlaybackStarts()).
  *
- * getQueueSourceLabel() builds the persistent banner text shown at the top
- * of the Queue page (e.g. "Playing songs like X, Y") from whichever mode
- * is currently active — see queuePage.js.
+ *   Songs are only ever removed from `queue` when they're actually played
+ *   through or skipped past (advanceQueue()/jumpToQueueIndex()) — never
+ *   just for being replaced by a new queueSongs() call. Removed entries
+ *   move to `history`, so playPrevious() has something to go back to.
  *
  * Engine: playback itself goes through playerEngine (playbackEngine.js) —
  * this file never talks to Spotify directly.
@@ -34,45 +33,18 @@
  */
 
 let queue = [];
-let queueIndex = -1;
-let queueMode = null;
+let history = [];
+const MAX_HISTORY = 20;
 let isPaused = true;
 
-// Set once per page load, the moment the user plays a playlist (from the
-// Playlist page). Deliberately in-memory only (never persisted) — a fresh
-// page load means "Shuffle Playlist" is disabled again until then.
-let sessionPlaylistId = null;
-let sessionPlaylistName = null;
-
-// Set via the "Play Recommended" dialog — { type: 'track'|'playlist', id, label }
-let recommendSource = null;
+function getCurrentEntry() { return queue[0] || null; }
+function getCurrentSong() { const e = getCurrentEntry(); return e ? e.song : null; }
+function getCurrentSourceLabel() { const e = getCurrentEntry(); return e ? e.source.label : null; }
+function getQueue() { return queue; }
 
 const playbackListeners = [];
 function onPlaybackChange(cb) { playbackListeners.push(cb); }
 function notifyPlaybackChange() { playbackListeners.forEach(cb => cb()); }
-
-function getCurrentSong() { return queueIndex >= 0 ? queue[queueIndex] : null; }
-function hasSessionPlaylist() { return sessionPlaylistId !== null; }
-function getQueue() { return queue; }
-function getQueueIndex() { return queueIndex; }
-
-/**
- * Builds the Queue page's persistent "what am I playing" banner text from
- * whichever mode is currently active. Returns null if nothing has ever
- * played yet (queueMode is still unset).
- */
-function getQueueSourceLabel() {
-  if (queueMode === 'random') return 'Playing randomly selected songs';
-  if (queueMode === 'playlist') {
-    return sessionPlaylistName ? `Playing from Playlist: ${sessionPlaylistName}` : 'Playing from a playlist';
-  }
-  if (queueMode === 'recommended' && recommendSource) {
-    return recommendSource.type === 'track'
-      ? `Playing songs like ${recommendSource.label}`
-      : `Playing songs similar to Playlist: ${recommendSource.label}`;
-  }
-  return null;
-}
 
 playerEngine.onEnded(() => playNext());
 playerEngine.onProgress(({ isPaused: paused }) => {
@@ -97,230 +69,76 @@ function togglePlayPause() {
   notifyPlaybackChange();
 }
 
-function playNext() {
-  if (queueIndex < queue.length - 1) {
-    queueIndex++;
-    loadAndPlayCurrent();
-    notifyPlaybackChange();
-  } else {
-    refillQueue();
+/** Removes the current head (fully played, or skipped) into history, then
+ *  plays whatever's now at the front, if anything. */
+function advanceQueue() {
+  const finished = queue.shift();
+  if (finished) {
+    history.push(finished);
+    if (history.length > MAX_HISTORY) history.shift();
   }
+  if (queue.length > 0) {
+    loadAndPlayCurrent();
+  } else {
+    isPaused = true;
+  }
+  notifyPlaybackChange();
 }
+
+function playNext() { advanceQueue(); }
 
 function playPrevious() {
-  if (queueIndex > 0) {
-    queueIndex--;
-    loadAndPlayCurrent();
-    notifyPlaybackChange();
-  }
+  const prev = history.pop();
+  if (!prev) return;
+  queue.unshift(prev);
+  loadAndPlayCurrent();
+  notifyPlaybackChange();
 }
 
 /**
- * Queue page: clicking a specific song in the queue jumps straight to it
- * (no re-fetch — it's already in `queue`).
+ * Queue page: clicking a song further down the queue skips straight to
+ * it — everything before it counts as "skipped" and moves to history,
+ * same as playNext() would do one at a time.
  */
 function jumpToQueueIndex(i) {
-  if (i < 0 || i >= queue.length) return;
-  queueIndex = i;
+  if (i <= 0 || i >= queue.length) return;
+  const skipped = queue.splice(0, i);
+  history.push(...skipped);
+  while (history.length > MAX_HISTORY) history.shift();
   loadAndPlayCurrent();
   notifyPlaybackChange();
 }
 
 /**
- * Playlist page: called by the "Play" button (startIndex 0) and by
- * clicking a specific track in the list (startIndex = that track's
- * position) — plays the WHOLE playlist as the queue, starting at
- * startIndex, and remembers it as this session's playlist for the
- * "Shuffle Playlist" button. `songs` is whatever the Playlist page already
- * fetched from GET /playlists/{id}/songs — no extra request here.
+ * THE one way anything gets added to the queue — playing a playlist,
+ * clicking a search result, or any "Recommend..." action. Always prepends
+ * `songs` (tagged with `source`) to the front of the queue; never clears
+ * or replaces what's already there. Then guarantees a song is actually
+ * playing (see ensurePlaybackStarts()).
  */
-function playPlaylistFrom(songs, startIndex, playlistId, playlistName) {
+function queueSongs(songs, source) {
   if (!songs || songs.length === 0) return;
-  sessionPlaylistId = playlistId;
-  sessionPlaylistName = playlistName;
-  queue = songs;
-  queueIndex = Math.min(Math.max(startIndex, 0), songs.length - 1);
-  queueMode = 'playlist';
-  loadAndPlayCurrent();
-  showToast(`Playing "${playlistName}"`);
+  queue = [...songs.map(song => ({ song, source })), ...queue];
   notifyPlaybackChange();
+  ensurePlaybackStarts();
 }
 
-/** Search: clicking a result queues it right after the current song AND
- *  plays it immediately (per spec: "Queue and Play"). */
-function enqueueNextAndPlay(song) {
-  if (queueIndex < 0) {
-    queue = [song];
-    queueIndex = 0;
-    queueMode = queueMode || 'random';
-  } else {
-    queue.splice(queueIndex + 1, 0, song);
-    queueIndex++;
-  }
-  loadAndPlayCurrent();
-  notifyPlaybackChange();
-}
-
-/** Called when the queue runs out during normal playback, and also right
- *  after any reshuffle button — always re-fetches from whatever
- *  `queueMode` currently points at. */
-async function refillQueue() {
-  let result;
-  if (queueMode === 'random') {
-    result = await apiCall(ENDPOINTS.songs());
-  } else if (queueMode === 'playlist') {
-    if (!sessionPlaylistId) {
-      showToast('Play a playlist first.', 'error');
-      return;
-    }
-    result = await apiCall(ENDPOINTS.playlistSongs(sessionPlaylistId));
-  } else if (queueMode === 'recommended') {
-    if (!recommendSource) {
-      showToast('Choose what to base recommendations on first.', 'error');
-      return;
-    }
-    // Mutually exclusive: exactly one of track_id / playlist_id is sent.
-    result = recommendSource.type === 'track'
-      ? await apiCall(ENDPOINTS.recommendByTrack(recommendSource.id))
-      : await apiCall(ENDPOINTS.recommendByPlaylist(recommendSource.id));
-  } else {
-    return; // nothing has ever played yet — nothing to refill
-  }
-
-  const { data: songs, error } = result;
-  if (error || !songs || songs.length === 0) {
-    showToast(error || 'No more songs to play.', 'error');
-    return;
-  }
-  queue = songs;
-  queueIndex = 0;
-  loadAndPlayCurrent();
-  notifyPlaybackChange();
-}
-
-/* =============================================================================
-   Reshuffle — the three visual buttons on the Queue page
-   ============================================================================= */
-
-async function shuffleRandom() {
-  queueMode = 'random';
-  showToast('Playing randomly selected songs', 'success', 5000);
-  await refillQueue();
-}
-
-async function shufflePlaylist() {
-  if (!sessionPlaylistId) return; // button is disabled in this case; safety net
-  queueMode = 'playlist';
-  showToast('Playing from your selected playlist', 'success', 5000);
-  await refillQueue();
-}
-
-function shuffleRecommended() {
-  openRecommendDialog();
-}
-
-async function applyRecommendSource(type, id, label) {
-  recommendSource = { type, id, label };
-  queueMode = 'recommended';
-  showToast(
-    type === 'track' ? `Playing songs like ${label}` : `Playing songs similar to Playlist: ${label}`,
-    'success', 5000
-  );
-  await refillQueue();
-}
-
-/* =============================================================================
-   "Play Recommended" dialog — lets the user choose a song or a playlist to
-   base recommendations on. Opens fresh every time so they can change their
-   mind (see header comment above). Opened from the Queue page.
-   ============================================================================= */
-
-function openRecommendDialog() {
-  document.getElementById('recommendSongSearch').value = '';
-  document.getElementById('recommendSongResults').innerHTML = '';
-  renderRecommendPlaylistList();
-  document.getElementById('recommendDialogOverlay').classList.add('open');
-}
-
-function closeRecommendDialog() {
-  document.getElementById('recommendDialogOverlay').classList.remove('open');
-}
-
-function renderRecommendPlaylistList() {
-  const container = document.getElementById('recommendPlaylistResults');
-  const playlists = (typeof ALL_PLAYLISTS !== 'undefined' && ALL_PLAYLISTS) ? ALL_PLAYLISTS : [];
-
-  if (playlists.length === 0) {
-    container.innerHTML = `<p class="tab-hint">Visit Home first to load your playlists.</p>`;
-    return;
-  }
-
-  container.innerHTML = `
-    <ul class="rec-list">
-      ${playlists.map(p => `
-        <li class="rec-list-item" data-id="${p.id}">
-          <div class="rec-list-info"><strong>${escapeHTML(p.name)}</strong></div>
-        </li>
-      `).join('')}
-    </ul>
-  `;
-  container.querySelectorAll('.rec-list-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const playlist = playlists.find(p => String(p.id) === item.dataset.id);
-      closeRecommendDialog();
-      applyRecommendSource('playlist', playlist.id, playlist.name);
-    });
+/**
+ * The Spotify embed only reliably starts playing once its iframe has
+ * actually been rendered on-screen — and #spotifyEngineFrame lives inside
+ * the Player page, which is `display:none` whenever it isn't the active
+ * page. So every time we queue something new: switch to the Player page
+ * (revealing the iframe), nudge it into view so the browser actually
+ * renders/plays it, start playback, then scroll back to the top of the
+ * page so what the user SEES is our own cover-art/title UI, not the embed.
+ */
+function ensurePlaybackStarts() {
+  goToPage('player');
+  const frame = document.getElementById('spotifyEngineFrame');
+  const scroller = document.querySelector('.content');
+  frame.scrollIntoView({ block: 'nearest' });
+  requestAnimationFrame(() => {
+    loadAndPlayCurrent();
+    scroller.scrollTo({ top: 0 });
   });
 }
-
-let recommendSearchDebounce;
-document.getElementById('recommendSongSearch').addEventListener('input', (e) => {
-  clearTimeout(recommendSearchDebounce);
-  const query = e.target.value;
-  const resultsDiv = document.getElementById('recommendSongResults');
-
-  if (!query.trim()) {
-    resultsDiv.innerHTML = '';
-    return;
-  }
-  resultsDiv.innerHTML = `<div class="loading"><div class="spinner"></div> Searching…</div>`;
-
-  recommendSearchDebounce = setTimeout(async () => {
-    const { data: results, error } = await apiCall(ENDPOINTS.search(query));
-
-    if (error) {
-      resultsDiv.innerHTML = errorStateHTML(error);
-      return;
-    }
-    if (!results || results.length === 0) {
-      resultsDiv.innerHTML = `<p class="tab-hint">No songs found.</p>`;
-      return;
-    }
-
-    const shown = results.slice(0, 8);
-    resultsDiv.innerHTML = `
-      <ul class="rec-list">
-        ${shown.map(s => `
-          <li class="rec-list-item" data-id="${s.track_id}">
-            <div class="rec-list-info">
-              <strong>${escapeHTML(s.track_name)}</strong>
-              <span>${escapeHTML(s.artists)}</span>
-            </div>
-          </li>
-        `).join('')}
-      </ul>
-    `;
-    resultsDiv.querySelectorAll('.rec-list-item').forEach((item, i) => {
-      item.addEventListener('click', () => {
-        const song = shown[i];
-        closeRecommendDialog();
-        applyRecommendSource('track', song.track_id, `${song.track_name}, ${song.artists}`);
-      });
-    });
-  }, 350);
-});
-
-document.getElementById('recommendDialogClose').addEventListener('click', closeRecommendDialog);
-document.getElementById('recommendDialogOverlay').addEventListener('click', (e) => {
-  if (e.target.id === 'recommendDialogOverlay') closeRecommendDialog();
-});

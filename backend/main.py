@@ -12,7 +12,10 @@ from pathlib import Path
 import joblib
 import pandas as pd 
 
-from .spotify_importer.queries import GET_PLAYLIST_SONGS, GET_PLAYLISTS
+from .spotify_importer.queries import (
+    GET_PLAYLIST_SONGS, GET_PLAYLISTS,
+    SEARCH_SONGS, RANDOM_SONGS
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -91,25 +94,21 @@ def get_song_by_id(track_id: str):
         (track_id,),
     )
 
-@app.get("/songs")
-def all_songs():
+# Utility script to return 10 random songs
+# For quick UI tests - placeholder tracks.
+@app.get("/songs/random")
+def random_songs():
     return fetch_all(
-        "SELECT * FROM songs ORDER BY RANDOM() LIMIT 50"
+        RANDOM_SONGS
     )
 
 
 @app.get("/songs/search")
-def search_songs(q: str=None, artist_name: str=None):
+def search_songs(q: str=None):
     search = f"%{q}%"
 
     return fetch_all(
-        """
-        SELECT *
-        FROM songs
-        WHERE artists ILIKE %s
-           OR track_name ILIKE %s
-        ORDER BY popularity DESC
-        """,
+        SEARCH_SONGS,
         (search, search),
     )
 
@@ -117,6 +116,7 @@ def search_songs(q: str=None, artist_name: str=None):
 @app.get("/recommend")
 def recommend(track_id: str = None, playlist_id: str = None):
 
+    return random_songs()
     if track_id:
         # Get songs by track id
         song_features = pd.DataFrame(get_song_by_id(track_id))
