@@ -17,18 +17,29 @@
  *   so they can never disagree (see README "Playback").
  *
  *   queueSongs(songs, source) is the ONE function everything goes through
- *   to add songs — clicking a playlist, clicking a search result, and
- *   every "Recommend..." action. It always PREPENDS to the front of the
- *   queue (played first) without clearing what's already there, then
- *   guarantees playback actually starts (see ensurePlaybackStarts()).
+ *   to add songs — playing a playlist, clicking a search result, clicking
+ *   a track in a playlist, and every "Recommend..." result. It never
+ *   clears or replaces what's already queued. Where it inserts depends on
+ *   whether something is currently playing:
+ *     - playing right now  -> inserted at position 1 (plays right after
+ *       the current song; doesn't interrupt it)
+ *     - paused / nothing playing -> inserted at position 0 (starts
+ *       playing immediately)
+ *   Everything else already in the queue keeps its relative order either
+ *   way — this only ever inserts, never reorders or clears.
  *
  *   Songs are only ever removed from `queue` when they're actually played
  *   through or skipped past (advanceQueue()/jumpToQueueIndex()) — never
- *   just for being replaced by a new queueSongs() call. Removed entries
- *   move to `history`, so playPrevious() has something to go back to.
+ *   just for being added alongside by a new queueSongs() call. Removed
+ *   entries move to `history`, so playPrevious() has something to go
+ *   back to.
  *
  * Engine: playback itself goes through playerEngine (playbackEngine.js) —
- * this file never talks to Spotify directly.
+ * this file never talks to Spotify directly. See the note on
+ * #spotifyEngineFrame in index.html for why that element lives in the
+ * persistent mini player bar rather than inside the Player page — it's
+ * what makes queueSongs() reliably start/update playback no matter which
+ * page you're currently looking at.
  * -----------------------------------------------------------------------------
  */
 
@@ -111,34 +122,23 @@ function jumpToQueueIndex(i) {
 
 /**
  * THE one way anything gets added to the queue — playing a playlist,
- * clicking a search result, or any "Recommend..." action. Always prepends
- * `songs` (tagged with `source`) to the front of the queue; never clears
- * or replaces what's already there. Then guarantees a song is actually
- * playing (see ensurePlaybackStarts()).
+ * clicking a search result, clicking a track in a playlist, or any
+ * "Recommend..." result. See the header comment above for exactly where
+ * it inserts and why. Never navigates you anywhere — you stay on
+ * whichever page you're already on; a toast confirms what got added.
  */
 function queueSongs(songs, source) {
   if (!songs || songs.length === 0) return;
-  queue = [...songs.map(song => ({ song, source })), ...queue];
-  notifyPlaybackChange();
-  ensurePlaybackStarts();
-}
 
-/**
- * The Spotify embed only reliably starts playing once its iframe has
- * actually been rendered on-screen — and #spotifyEngineFrame lives inside
- * the Player page, which is `display:none` whenever it isn't the active
- * page. So every time we queue something new: switch to the Player page
- * (revealing the iframe), nudge it into view so the browser actually
- * renders/plays it, start playback, then scroll back to the top of the
- * page so what the user SEES is our own cover-art/title UI, not the embed.
- */
-function ensurePlaybackStarts() {
-  goToPage('player');
-  const frame = document.getElementById('spotifyEngineFrame');
-  const scroller = document.querySelector('.content');
-  frame.scrollIntoView({ block: 'nearest' });
-  requestAnimationFrame(() => {
-    loadAndPlayCurrent();
-    scroller.scrollTo({ top: 0 });
-  });
+  const entries = songs.map(song => ({ song, source }));
+  const wasPlaying = getCurrentSong() !== null && !isPaused;
+  const insertAt = wasPlaying ? 1 : 0;
+  queue = [...queue.slice(0, insertAt), ...entries, ...queue.slice(insertAt)];
+
+  if (insertAt === 0) loadAndPlayCurrent();
+  notifyPlaybackChange();
+
+  showToast(songs.length === 1
+    ? `Added "${songs[0].track_name}" to queue`
+    : `Added ${songs.length} songs to queue`);
 }

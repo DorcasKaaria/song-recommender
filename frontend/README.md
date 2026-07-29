@@ -167,13 +167,22 @@ Influence, Chris Brown"` — precomputed by whoever queued it.
 
 **`queueSongs(songs, source)` is the one function everything goes
 through** to add songs to the queue: playing a playlist, clicking a
-search result, and every "Recommend..." action. It always **prepends** to
-the front of the queue (so the newest addition plays next/first) —
-**it never clears or replaces what's already there.** Songs are only
-ever removed from the queue when they're actually played through or
-skipped past, never just for being "replaced" by a new `queueSongs()`
-call. Removed entries move into `history` (capped at 20), so the
-Previous button has something to go back to.
+search result, clicking a track in a playlist, and every "Recommend..."
+result. It **never clears or replaces what's already queued** — it only
+ever inserts, and where it inserts depends on whether something is
+currently playing:
+- **something is playing right now** → inserted at position 1 (plays
+  right after the current song; doesn't interrupt it)
+- **paused, or nothing playing yet** → inserted at position 0 (starts
+  playing immediately)
+
+Everything else already in the queue keeps its relative order either way.
+Songs are only ever removed from the queue when they're actually played
+through or skipped past, never for being "replaced" by a `queueSongs()`
+call. Removed entries move into `history` (capped at 20), so the Previous
+button has something to go back to. `queueSongs()` never navigates you
+anywhere — you stay on whichever page you're on — and always shows a
+short toast ("Added \"X\" to queue") confirming what happened.
 
 Both the Player page and the Queue page read the exact same
 `getCurrentSourceLabel()` (which just reads `queue[0].source.label`), so
@@ -206,39 +215,49 @@ treats `position >= duration` (from the API's `playback_update` event) as
 one — fine for now, flagged here in case you want to make it more robust
 later (e.g. requiring `isPaused` to also flip, or a small buffer).
 
-### Guaranteeing a song actually starts playing
+### Making sure the Spotify embed actually plays reliably
 
-The Spotify embed only reliably starts playing once its `<iframe>` has
-actually been rendered on-screen at least once — and `#spotifyEngineFrame`
-lives inside the Player page, which is `display:none` whenever it isn't
-the active page. So every call to `queueSongs()` ends with
-`ensurePlaybackStarts()` (in `player.js`), which:
-1. Switches to the Player page (revealing the iframe if it wasn't already).
-2. Scrolls it into view so the browser actually renders/plays it.
-3. Starts playback.
-4. Scrolls back to the top of the page, so what you actually **see** is
-   the normal cover-art/title UI, not the embed itself.
+`#spotifyEngineFrame` (the Spotify iFrame mount point) lives inside the
+persistent mini player bar (`.mini-player` in `index.html`), not inside
+the Player page — see "Embedding the Spotify player" below for why. That
+alone isn't quite enough, though: `playerEngine.mount()` runs once, at
+page load, into that container — well before any song has ever played.
+If `.mini-player` used `display:none` for its "nothing playing yet" state
+(the seemingly obvious choice), the Spotify iframe would be created
+inside a container with zero layout, and — this is a real, well-known
+browser limitation — an iframe that fails to initialize while hidden
+generally does **not** start working correctly just because its container
+later becomes `display:block`. That was the cause of a real bug: the
+embed would silently stay broken (or keep playing the previous track)
+until the user happened to manually reveal it in a way that triggered a
+fresh render.
 
-This means any action that adds to the queue (playing a playlist,
-clicking a search result, a recommend action) will always leave you on
-the Player page afterwards, by design — that's how it guarantees
-something is actually playing rather than silently failing to start.
+The fix: `.mini-player` in `style.css` **never uses `display:none`**.
+Its "nothing playing yet" state instead collapses to `height: 0;
+overflow: hidden;` (with zero vertical padding to match), and
+`.mini-player.show` just grows the height/padding back — the DOM stays
+genuinely rendered the entire time, so the Spotify iframe mounted inside
+it initializes correctly from the very first page load, whether or not
+anything is playing yet. If you ever touch this CSS, keep that
+`display:none`-free property intact, or the embed can silently break
+again in a way that's hard to notice locally and easy to ship.
 
 ### Recommend Similar Songs (Player page)
 
 One button, based on whatever is **currently playing**. It fires
 `GET /recommend?track_id={id}` and `GET /recommend?artists={artists}` in
-parallel, merges both result sets, and queues them together as one batch
-(so you don't have to pick between "similar songs" and "similar artists"
-— you get both). It's a compact pill button reusing the current song's
-own `track_image` for its icon, since there's no dedicated
-artwork-per-action endpoint.
+parallel, merges both result sets, and shows them as an interactive list
+right below the button — same pattern as the Playlist page's recommend
+button (see "Recommending from a playlist" above): nothing is queued just
+from fetching, only tapping one of the listed songs calls `queueSongs()`.
+It's a compact pill button reusing the current song's own `track_image`
+for its icon, since there's no dedicated artwork-per-action endpoint.
 
 ### Search — click to queue and play
 
-Clicking a search result calls `queueSongs([song], ...)` — added to the
-front of the queue and played immediately (see the queue model above),
-not just silently appended to the end.
+Clicking a search result calls `queueSongs([song], ...)` — inserted right
+after the current song (or played immediately if nothing was playing —
+see the queue model above), not silently appended to the end.
 
 ### Embedding the Spotify player — and leaving room for real audio later
 

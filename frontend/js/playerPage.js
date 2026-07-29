@@ -12,8 +12,10 @@
  * "Recommend Similar Songs" is based on whatever is CURRENTLY PLAYING. It
  * calls BOTH GET /recommend?track_id= (songs like this exact track) and
  * GET /recommend?artists= (songs by similar artists) in parallel, merges
- * the two result sets into one batch, and queues them together via
- * queueSongs() (player.js) — one click, one combined recommendation.
+ * the two result sets, and shows them as an interactive list right below
+ * the button — same pattern as the Playlist page's recommend button
+ * (see playlistPage.js). Nothing gets queued just from fetching; tapping
+ * one of the listed songs is what actually calls queueSongs() (player.js).
  *
  * Both re-render every time player.js calls notifyPlaybackChange() (song
  * changed, play/pause toggled, a recommendation got queued, etc) via
@@ -103,36 +105,70 @@ function renderRecommendOptions(song) {
   // the current song's own cover art — same simplification Spotify itself
   // falls back to when it doesn't have bespoke art for a shelf.
   document.getElementById('recommendSimilarSongsArt').src = song.track_image || '';
+  // Results are contextual to whatever's playing — clear them out when
+  // the song changes rather than leaving stale results on screen.
+  document.getElementById('recommendSimilarSongsResults').innerHTML = '';
+}
+
+/**
+ * One recommended song row — same pattern as playlistPage.js's
+ * recommendRowHTML(): a "+" makes it clear tapping the row adds it to the
+ * queue, it doesn't play a whole list.
+ */
+function recommendResultRowHTML(song) {
+  const thumb = song.track_image
+    ? `<img src="${escapeHTML(song.track_image)}" alt="" loading="lazy">`
+    : `<div class="search-row-fallback">🎵</div>`;
+
+  return `
+    <li class="track-row" data-id="${song.track_id}">
+      <div class="track-row-art">${thumb}</div>
+      <div class="track-row-info">
+        <strong>${escapeHTML(song.track_name)}</strong>
+        <span>${escapeHTML(song.artists)}</span>
+      </div>
+      <span class="track-row-add" title="Add to queue">+</span>
+    </li>
+  `;
 }
 
 /**
  * Fires GET /recommend?track_id= and GET /recommend?artists= in parallel
  * (based on whatever's currently playing), merges both result sets, and
- * queues them together as one batch.
+ * shows them as an interactive list below the button. Nothing is queued
+ * until the user taps one of the results.
  */
 async function runRecommendSimilarSongs() {
   const song = getCurrentSong();
   if (!song) return;
+
+  const results = document.getElementById('recommendSimilarSongsResults');
+  results.innerHTML = `<div class="loading"><div class="spinner"></div> Finding recommendations…</div>`;
 
   const [byTrack, byArtists] = await Promise.all([
     apiCall(ENDPOINTS.recommendByTrack(song.track_id)),
     apiCall(ENDPOINTS.recommendByArtists(song.artists)),
   ]);
 
-  // If either call failed, still use whatever the other one returned —
-  // only bail out if both failed.
+  // If both calls failed, show the error; if only one did, still use
+  // whatever the other one returned.
   if (byTrack.error && byArtists.error) {
-    showToast(byTrack.error, 'error');
+    results.innerHTML = errorStateHTML(byTrack.error);
     return;
   }
 
   const merged = [...(byTrack.data || []), ...(byArtists.data || [])];
   if (merged.length === 0) {
-    showToast('No songs found.', 'error');
+    results.innerHTML = `<div class="empty-state"><p>No recommendations available.</p></div>`;
     return;
   }
 
-  queueSongs(merged, { label: `Playing songs similar to ${song.track_name}, ${song.artists}` });
+  results.innerHTML = merged.map(s => recommendResultRowHTML(s)).join('');
+  results.querySelectorAll('.track-row').forEach((row, i) => {
+    row.addEventListener('click', () => {
+      queueSongs([merged[i]], { label: `Playing songs similar to ${song.track_name}, ${song.artists}` });
+    });
+  });
 }
 
 /* ---------------- Wiring ---------------- */

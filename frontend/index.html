@@ -183,15 +183,13 @@
             </div>
 
             <!--
-              The actual Spotify iFrame API player is mounted here — kept
-              small and tucked below our own controls on purpose. Our big
-              cover art / title / prev / play / next above are the "face"
-              of the player; this frame is just the engine driving sound.
+              The actual Spotify player lives in the persistent mini player
+              bar (see #spotifyEngineFrame in the mini-player markup) so it
+              keeps working across page navigation — this page just shows
+              our own cover art / controls "face" on top of it.
               See js/playbackEngine.js for why this split makes it easy to
               swap in real streamed audio later without any UI changes.
             -->
-            <div class="spotify-engine-frame" id="spotifyEngineFrame"></div>
-
             <div id="playerCreditsContainer"></div>
 
             <div class="recommend-section">
@@ -200,6 +198,7 @@
                 <img class="recommend-cta-art" id="recommendSimilarSongsArt" src="" alt="">
                 <span class="recommend-cta-label">Recommend Similar Songs</span>
               </button>
+              <ul class="track-list" id="recommendSimilarSongsResults"></ul>
             </div>
           </div>
         </section>
@@ -225,6 +224,17 @@
         <button class="icon-btn" id="miniPlayerPlayPauseBtn" title="Play/Pause">
           <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
         </button>
+        <!--
+          The actual Spotify iFrame API player lives HERE, tucked into the
+          persistent mini player bar, not inside the Player page. This is
+          deliberate: `.page` sections are `display:none` when inactive,
+          and a `display:none` iframe unreliably plays/updates in real
+          browsers. The mini player bar is only ever hidden via a `.show`
+          class toggle (not `display:none` from page navigation), so once
+          a song is playing, this stays genuinely rendered no matter which
+          page is showing — see js/playbackEngine.js.
+        -->
+        <div class="spotify-engine-frame" id="spotifyEngineFrame"></div>
       </div>
 
       <!--

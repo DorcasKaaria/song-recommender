@@ -270,44 +270,6 @@ svg {
   margin: 28px 0 16px;
 }
 
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 28px 0 16px;
-}
-
-.section-header .section-title {
-  margin: 0;
-}
-
-/* ---------- Stats strip (home) ---------- */
-
-.stat-strip {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.stat-pill {
-  background: var(--bg-card);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  min-width: 120px;
-}
-
-.stat-pill .num {
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.stat-pill .lbl {
-  font-size: 12px;
-  color: var(--text-subdued);
-  margin-top: 4px;
-}
-
 /* ---------- Loading / empty states ---------- */
 
 .loading, .empty-state {
@@ -376,22 +338,6 @@ svg {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--text);
-}
-
-.btn-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
 }
 
 /* ---------- Playlist grid (Home) ---------- */
@@ -754,19 +700,38 @@ svg {
 
 /* ---------- Mini player bar ---------- */
 
+/*
+  IMPORTANT: never use `display: none` here. playerEngine.mount() runs
+  once, at page load, into #spotifyEngineFrame inside this bar — well
+  before any song has ever played and before `.show` is ever added. If
+  this container were `display:none` at that moment, the Spotify iframe
+  it creates never properly initializes, and simply toggling
+  display:flex later does NOT fix an iframe that failed to start
+  correctly while hidden (this is a real, well-known browser limitation
+  for iframes). So instead of display:none, the collapsed (no song yet)
+  state below just squashes the bar to zero height with overflow:hidden
+  — the DOM stays genuinely rendered (and the Spotify iframe inside it
+  keeps working reliably) even though nothing is visible.
+*/
 .mini-player {
-  display: none;
+  display: flex;
+  position: relative;
   flex-shrink: 0;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 0 16px;
+  height: 0;
+  overflow: hidden;
   background: var(--bg-elevated);
-  border-top: 1px solid var(--border);
+  border-top: 0px solid var(--border);
   cursor: pointer;
+  transition: height 0.15s ease, padding 0.15s ease;
 }
 
 .mini-player.show {
-  display: flex;
+  height: 64px;
+  padding: 10px 16px;
+  border-top-width: 1px;
 }
 
 .mini-player-art {
@@ -885,15 +850,24 @@ svg {
 }
 
 /*
-  The Spotify iFrame API player — kept compact on purpose. It's the audio
-  "engine", not the visual focus (see playbackEngine.js). If you swap in a
-  real streamed-audio engine later, this is the element it would mount
-  into instead (or you can remove it and drop the height to 0).
+  The Spotify iFrame API player — the audio "engine", not the visual
+  focus (see playbackEngine.js). It's kept genuinely on-screen (never
+  display:none, never zero-size) because real browsers unreliably
+  play/update a hidden iframe — but tucked into a corner of the mini
+  player bar via near-zero opacity so it's invisible to the user. If you
+  swap in a real streamed-audio engine later, this is the element it
+  would mount into instead (or you can delete it entirely).
 */
 .spotify-engine-frame {
-  width: 100%;
-  border-radius: 8px;
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 60px;
+  height: 60px;
   overflow: hidden;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .player-source-label {
@@ -1044,17 +1018,11 @@ svg {
   .content {
     padding: 16px 16px 24px;
   }
-  .mini-player {
+  .mini-player.show {
     padding: 8px 12px;
   }
   .player-control-btn svg {
     width: 24px;
     height: 24px;
-  }
-  .reshuffle-btn span {
-    display: none; /* icon-only on small screens to avoid wrapping/crowding */
-  }
-  .reshuffle-btn {
-    padding: 12px;
   }
 }
